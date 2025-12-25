@@ -292,13 +292,15 @@ MonoBehaviour:
   maxLength: 2
   extendDuration: 0.05
   rootOffset: 0.5
-  jumpForce: 6
+  kickRange: 0.6
+  kickForce: 7
+  kickCooldown: 0.2
+  kickFlashTime: 0.1
   swingForce: 20
-  grappleCooldown: 0.5
   colorNormal: {r: 0, g: 0, b: 0, a: 1}
-  colorExtending: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  colorJump: {r: 1, g: 0, b: 0, a: 1}
+  colorKick: {r: 1, g: 0, b: 0, a: 1}
   colorGrapple: {r: 0, g: 0, b: 1, a: 1}
+  colorExtending: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   hairRenderer: {fileID: 1254457371}
 --- !u!50 &541550210
 Rigidbody2D:

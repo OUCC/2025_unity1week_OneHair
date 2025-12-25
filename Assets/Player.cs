@@ -3,45 +3,57 @@ using UnityEngine.InputSystem;
 
 public class HairController : MonoBehaviour
 {
-	[Header("Hair Specs")]
-	public float minLength = 0.5f;     // 普段の長さ
-	public float maxLength = 2.0f;     // 最大長さ
-	public float extendDuration = 0.1f;// ★変更: 伸びきるまでの時間(秒)
-	public float rootOffset = 0.5f;    // 頭の半径
+	// =====================
+	// 設定
+	// =====================
 
-	[Header("Actions")]
-	public float jumpForce = 20.0f;
-	public float swingForce = 20.0f;
-	public float grappleCooldown = 1.0f; // キック後の吸着不可時間
+	[Header("Hair Specs")]
+	public float minLength = 0.5f;
+	public float maxLength = 2.0f;
+	public float extendDuration = 0.1f;
+	public float rootOffset = 0.5f;
+
+	[Header("Kick")]
+	public float kickRange = 1.2f;
+	public float kickForce = 20f;
+	public float kickCooldown = 1.0f;
+	public float kickFlashTime = 0.1f;
+
+	[Header("Grapple")]
+	public float swingForce = 20f;
 
 	[Header("Colors")]
 	public Color colorNormal = Color.black;
-	public Color colorExtending = Color.yellow;
-	public Color colorJump = Color.red;
+	public Color colorKick = Color.red;
 	public Color colorGrapple = Color.blue;
+	public Color colorExtending = Color.yellow;
 
 	[Header("References")]
 	public LineRenderer hairRenderer;
 
-	// 内部変数
+	// =====================
+	// 内部
+	// =====================
+
 	private Rigidbody2D rb;
 	private Camera mainCam;
 	private Vector2 mousePos;
 
-	// 状態管理
 	private float currentLength;
-	private bool isExtending = false;
-	private bool isGrappling = false;
-	private bool isMaxExtended = false;
+	private bool isExtending;
+	private bool isMaxExtended;
+	private bool isGrappling;
 
-	// クールダウン・演出用
-	private float jumpFlashTimer = 0f;
-	private bool isJumpFlashing = false;
-	private float currentGrappleCooldown = 0f;
+	private float kickCooldownTimer;
+	private float kickFlashTimer;
+	private bool isKickFlashing;
 
-	// 物理用
 	private Vector2 grapplePoint;
 	private DistanceJoint2D joint;
+
+	// =====================
+	// Unity
+	// =====================
 
 	void Start()
 	{
@@ -58,10 +70,8 @@ public class HairController : MonoBehaviour
 	{
 		if (Mouse.current == null || Keyboard.current == null) return;
 
-		if (currentGrappleCooldown > 0)
-		{
-			currentGrappleCooldown -= Time.deltaTime;
-		}
+		if (kickCooldownTimer > 0)
+			kickCooldownTimer -= Time.deltaTime;
 
 		HandleRotation();
 		HandleInput();
@@ -71,52 +81,69 @@ public class HairController : MonoBehaviour
 	void FixedUpdate()
 	{
 		if (isGrappling)
-		{
 			HandleSwing();
-		}
 	}
 
-	Vector2 GetRootPos()
-	{
-		return (Vector2)transform.position + (Vector2)transform.up * rootOffset;
-	}
-
-	void HandleRotation()
-	{
-		Vector2 screenPos = Mouse.current.position.ReadValue();
-		mousePos = mainCam.ScreenToWorldPoint(screenPos);
-
-		Vector2 direction = mousePos - (Vector2)transform.position;
-		float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
-
-		rb.MoveRotation(angle);
-	}
+	// =====================
+	// 入力
+	// =====================
 
 	void HandleInput()
 	{
-		if (Keyboard.current.spaceKey.isPressed)
+		// --- キック ---
+		if (Keyboard.current.spaceKey.wasPressedThisFrame)
 		{
-			if (!isGrappling && !isJumpFlashing)
-			{
-				ProcessExtension();
-			}
+			TryKick();
+		}
+
+		// --- グラップル ---
+		if (Keyboard.current.fKey.isPressed)
+		{
+			if (!isGrappling)
+				ProcessGrappleExtension();
 		}
 		else
 		{
-			ResetHair();
+			ResetGrapple();
 		}
 	}
 
-	void ProcessExtension()
+	// =====================
+	// キック
+	// =====================
+
+	void TryKick()
+	{
+		if (kickCooldownTimer > 0) return;
+
+		Vector2 root = GetRootPos();
+		Vector2 dir = transform.up;
+
+		RaycastHit2D hit = Physics2D.Raycast(root, dir, kickRange);
+
+		if (hit.collider == null || hit.collider.gameObject == gameObject)
+			return;
+
+		// 反動ジャンプ
+		rb.linearVelocity = Vector2.zero;
+		rb.AddForce(-dir * kickForce, ForceMode2D.Impulse);
+
+		isKickFlashing = true;
+		kickFlashTimer = kickFlashTime;
+		kickCooldownTimer = kickCooldown;
+	}
+
+	// =====================
+	// グラップル
+	// =====================
+
+	void ProcessGrappleExtension()
 	{
 		isExtending = true;
 
-		// 1. 時間管理で長さを計算
 		if (!isMaxExtended)
 		{
-			// (目標距離 / 時間) = 速度
-			float speed = (maxLength - minLength) / Mathf.Max(extendDuration, 0.001f); // 0除算防止
-
+			float speed = (maxLength - minLength) / Mathf.Max(extendDuration, 0.001f);
 			currentLength += speed * Time.deltaTime;
 
 			if (currentLength >= maxLength)
@@ -126,40 +153,16 @@ public class HairController : MonoBehaviour
 			}
 		}
 
-		// 2. 当たり判定
 		Vector2 root = GetRootPos();
 		Vector2 dir = transform.up;
 
 		RaycastHit2D hit = Physics2D.Raycast(root, dir, currentLength);
 
-		if (hit.collider != null && hit.collider.gameObject != gameObject)
-		{
-			if (!isMaxExtended)
-			{
-				// 伸びてる最中 = ジャンプ
-				PerformJump();
-			}
-			else
-			{
-				// 伸びきった後 = くっつく
-				if (!isGrappling && currentGrappleCooldown <= 0)
-				{
-					StartGrapple(hit.point, hit.collider.gameObject);
-				}
-			}
-		}
-	}
+		if (hit.collider == null || hit.collider.gameObject == gameObject)
+			return;
 
-	void PerformJump()
-	{
-		rb.linearVelocity = Vector2.zero;
-		rb.AddForce(-transform.up * jumpForce, ForceMode2D.Impulse);
-
-		isJumpFlashing = true;
-		jumpFlashTimer = 0.1f;
-		currentGrappleCooldown = grappleCooldown;
-
-		ResetHairStateOnly();
+		if (isMaxExtended && !isGrappling)
+			StartGrapple(hit.point, hit.collider.gameObject);
 	}
 
 	void StartGrapple(Vector2 point, GameObject hitObject)
@@ -190,52 +193,66 @@ public class HairController : MonoBehaviour
 
 	void HandleSwing()
 	{
-		Vector2 dirToMouse = (mousePos - (Vector2)transform.position).normalized;
-		rb.AddForce(dirToMouse * swingForce);
+		Vector2 dir = (mousePos - (Vector2)transform.position).normalized;
+		rb.AddForce(dir * swingForce);
 	}
 
-	void ResetHair()
-	{
-		ResetHairStateOnly();
-
-		if (joint != null) Destroy(joint);
-		DistanceJoint2D[] joints = GetComponents<DistanceJoint2D>();
-		foreach (var j in joints) Destroy(j);
-
-		isGrappling = false;
-	}
-
-	void ResetHairStateOnly()
+	void ResetGrapple()
 	{
 		isExtending = false;
 		isMaxExtended = false;
 		currentLength = minLength;
+
+		if (joint != null)
+			Destroy(joint);
+
+		foreach (var j in GetComponents<DistanceJoint2D>())
+			Destroy(j);
+
+		isGrappling = false;
 	}
+
+	// =====================
+	// 補助
+	// =====================
+
+	void HandleRotation()
+	{
+		mousePos = mainCam.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+
+		Vector2 dir = mousePos - (Vector2)transform.position;
+		float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
+		rb.MoveRotation(angle);
+	}
+
+	Vector2 GetRootPos()
+	{
+		return (Vector2)transform.position + (Vector2)transform.up * rootOffset;
+	}
+
+	// =====================
+	// 表示
+	// =====================
 
 	void UpdateVisuals()
 	{
 		Vector2 root = GetRootPos();
 
-		if (isJumpFlashing)
+		if (isKickFlashing)
 		{
-			jumpFlashTimer -= Time.deltaTime;
-			if (jumpFlashTimer <= 0) isJumpFlashing = false;
+			kickFlashTimer -= Time.deltaTime;
+			if (kickFlashTimer <= 0)
+				isKickFlashing = false;
 		}
 
-		Vector2 tipPos;
-		if (isGrappling)
-		{
-			tipPos = grapplePoint;
-		}
-		else
-		{
-			tipPos = root + (Vector2)transform.up * currentLength;
-		}
+		Vector2 tip =
+			isGrappling ? grapplePoint :
+			root + (Vector2)transform.up * currentLength;
 
 		hairRenderer.SetPosition(0, root);
-		hairRenderer.SetPosition(1, tipPos);
+		hairRenderer.SetPosition(1, tip);
 
-		if (isJumpFlashing) SetColor(colorJump);
+		if (isKickFlashing) SetColor(colorKick);
 		else if (isGrappling) SetColor(colorGrapple);
 		else if (isExtending) SetColor(colorExtending);
 		else SetColor(colorNormal);
