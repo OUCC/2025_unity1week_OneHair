@@ -30,6 +30,16 @@ public class HairController : MonoBehaviour
 
 	[Header("References")]
 	public LineRenderer hairRenderer;
+	public Animator faceAnimator;
+
+	[Header("Face Settings (Random Range)")]
+	// 伸ばし中・グラップル中の顔の範囲（例：1～2）
+	public int strainFaceMin = 1;
+	public int strainFaceMax = 3;
+
+	// キック時の顔の範囲（例：3～4）
+	public int kickFaceMin = 3;
+	public int kickFaceMax = 4;
 
 	// =====================
 	// 内部
@@ -50,6 +60,10 @@ public class HairController : MonoBehaviour
 
 	private Vector2 grapplePoint;
 	private DistanceJoint2D joint;
+
+	// ランダムに決まった顔を保存しておく変数
+	private int currentStrainFaceIndex = -1;
+	private int currentKickFaceIndex = -1;
 
 	// =====================
 	// Unity
@@ -96,7 +110,14 @@ public class HairController : MonoBehaviour
 			TryKick();
 		}
 
-		// --- グラップル ---
+		// --- グラップル（髪伸ばし） ---
+		// キーを押した瞬間に、今回の「頑張る顔」をランダムで決める
+		if (Keyboard.current.fKey.wasPressedThisFrame)
+		{
+			// Random.Rangeのint版は、Maxが含まれないので +1 する
+			currentStrainFaceIndex = Random.Range(strainFaceMin, strainFaceMax + 1);
+		}
+
 		if (Keyboard.current.fKey.isPressed)
 		{
 			if (!isGrappling)
@@ -127,6 +148,9 @@ public class HairController : MonoBehaviour
 		// 反動ジャンプ
 		rb.linearVelocity = Vector2.zero;
 		rb.AddForce(-dir * kickForce, ForceMode2D.Impulse);
+
+		// キックした瞬間に、今回の「怒り顔」をランダムで決める
+		currentKickFaceIndex = Random.Range(kickFaceMin, kickFaceMax + 1);
 
 		isKickFlashing = true;
 		kickFlashTimer = kickFlashTime;
@@ -236,6 +260,27 @@ public class HairController : MonoBehaviour
 
 	void UpdateVisuals()
 	{
+		// --- アニメーター制御 ---
+		if (faceAnimator != null)
+		{
+			int targetFace = -1; // デフォルト（真顔）
+
+			if (isKickFlashing)
+			{
+				// キック中：キック時に決定したランダムな顔
+				targetFace = currentKickFaceIndex;
+			}
+			else if (isExtending || isGrappling)
+			{
+				// 伸ばし中 or 掴まり中：キーを押した時に決定したランダムな顔
+				// ※長さによる変化は削除しました
+				targetFace = currentStrainFaceIndex;
+			}
+
+			faceAnimator.SetInteger("Face", targetFace);
+		}
+
+		// --- 描画処理 ---
 		Vector2 root = GetRootPos();
 
 		if (isKickFlashing)
