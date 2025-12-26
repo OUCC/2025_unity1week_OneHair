@@ -120,6 +120,7 @@ public class HairController : MonoBehaviour
 
 		if (Keyboard.current.fKey.isPressed)
 		{
+			if (kickCooldownTimer > 0) return;
 			if (!isGrappling)
 				ProcessGrappleExtension();
 		}
@@ -136,6 +137,10 @@ public class HairController : MonoBehaviour
 	void TryKick()
 	{
 		if (kickCooldownTimer > 0) return;
+		if (isGrappling)
+		{
+			ResetGrapple();
+		}
 
 		Vector2 root = GetRootPos();
 		Vector2 dir = transform.up;
