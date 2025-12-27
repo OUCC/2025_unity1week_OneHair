@@ -80,3 +80,6 @@ crashlytics-build.properties
 
 # VS Code workspace settings
 .vscode/Settings.json
+
+# TextMesh Pro generated files
+/[Aa]ssets/[Tt]extMesh Pro/

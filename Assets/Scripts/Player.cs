@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
-public class HairController : MonoBehaviour
+public class Player : MonoBehaviour
 {
 	// =====================
 	// 設定
@@ -18,6 +19,11 @@ public class HairController : MonoBehaviour
 	public float kickForce = 20f;
 	public float kickCooldown = 1.0f;
 	public float kickFlashTime = 0.1f;
+
+    [Header("HP Settings")]
+    public Slider hpSlider;
+    public float maxHP = 100f;
+    public float currentHP = 100f;
 
 	[Header("Grapple")]
 	public float swingForce = 20f;
@@ -65,6 +71,18 @@ public class HairController : MonoBehaviour
 	private int currentStrainFaceIndex = -1;
 	private int currentKickFaceIndex = -1;
 
+    [Header("HP Regeneration and Damage Settings")]
+    [SerializeField]
+    private float GrappleDamageAmount = 1.0f;
+    [SerializeField]
+    private float GrappleDamageInterval = 0.5f;
+    [SerializeField]
+    private float GrappleDamageCount = 0f;
+    [SerializeField]
+    private float kickDamageAmount = 5f;
+
+    private bool isDead = false;
+
 	// =====================
 	// Unity
 	// =====================
@@ -78,6 +96,8 @@ public class HairController : MonoBehaviour
 		hairRenderer.useWorldSpace = true;
 
 		currentLength = minLength;
+
+        updateHP();
 	}
 
 	void Update()
@@ -149,6 +169,9 @@ public class HairController : MonoBehaviour
 
 		if (hit.collider == null || hit.collider.gameObject == gameObject)
 			return;
+
+        // キックダメージ
+        Damage(kickDamageAmount);
 
 		// 反動ジャンプ
 		rb.linearVelocity = Vector2.zero;
@@ -222,6 +245,16 @@ public class HairController : MonoBehaviour
 
 	void HandleSwing()
 	{
+        //継続ダメージ
+        if (GrappleDamageCount > GrappleDamageInterval)
+        {
+            GrappleDamageCount -= GrappleDamageInterval;
+            Damage(GrappleDamageAmount);
+        }
+
+        //継続ダメージ用カウントアップ
+        GrappleDamageCount += Time.deltaTime;
+
 		Vector2 dir = (mousePos - (Vector2)transform.position).normalized;
 		rb.AddForce(dir * swingForce);
 	}
@@ -239,6 +272,9 @@ public class HairController : MonoBehaviour
 			Destroy(j);
 
 		isGrappling = false;
+
+        //継続ダメージのカウントをリセット
+        GrappleDamageCount = 0f;
 	}
 
 	// =====================
@@ -313,4 +349,51 @@ public class HairController : MonoBehaviour
 		hairRenderer.startColor = c;
 		hairRenderer.endColor = c;
 	}
+
+    private void updateHP()
+    {
+        hpSlider.maxValue = maxHP;
+        hpSlider.value = currentHP;
+
+        if (currentHP <= 0)
+        {
+            //ゲームオーバー
+            isDead = true;
+            
+        }
+    }
+
+    public void Damage(float amount)
+    {
+        if (amount <= 0) 
+        {
+            return;
+        }
+
+        currentHP -= amount;
+
+        if (currentHP <= 0) 
+        {
+            currentHP = 0;
+        }
+
+        updateHP();
+    }
+
+    public void Heal(float amount)
+    {
+        if (amount <= 0) 
+        {
+            return;
+        }
+
+        currentHP += amount;
+
+        if (currentHP >= maxHP) 
+        {
+            currentHP = maxHP;
+        }
+
+        updateHP();
+    }
 }
