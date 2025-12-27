@@ -22,16 +22,22 @@ public class HairController : MonoBehaviour
 	[Header("Grapple")]
 	public float swingForce = 20f;
 
-	[Header("Hair Color")]
-	[SerializeField] private Color currentHairColor = Color.black;
+	[Header("Colors")]
+	public Color colorNormal = Color.black;
+	public Color colorKick = Color.red;
+	public Color colorGrapple = Color.blue;
+	public Color colorExtending = Color.yellow;
 
 	[Header("References")]
 	public LineRenderer hairRenderer;
 	public Animator faceAnimator;
 
 	[Header("Face Settings (Random Range)")]
+	// 伸ばし中・グラップル中の顔の範囲（例：1～2）
 	public int strainFaceMin = 1;
 	public int strainFaceMax = 3;
+
+	// キック時の顔の範囲（例：3～4）
 	public int kickFaceMin = 3;
 	public int kickFaceMax = 4;
 
@@ -55,6 +61,7 @@ public class HairController : MonoBehaviour
 	private Vector2 grapplePoint;
 	private DistanceJoint2D joint;
 
+	// ランダムに決まった顔を保存しておく変数
 	private int currentStrainFaceIndex = -1;
 	private int currentKickFaceIndex = -1;
 
@@ -71,60 +78,24 @@ public class HairController : MonoBehaviour
 		hairRenderer.useWorldSpace = true;
 
 		currentLength = minLength;
-		ApplyHairColor();
 	}
 
 	void Update()
 	{
-		bool isPlaying =
-			GameManager.Instance == null ||
-			GameManager.Instance.IsPlaying();
+		if (Mouse.current == null || Keyboard.current == null) return;
 
-		// --- 操作系は Playing のみ ---
-		if (isPlaying)
-		{
-			if (Mouse.current == null || Keyboard.current == null) return;
+		if (kickCooldownTimer > 0)
+			kickCooldownTimer -= Time.deltaTime;
 
-			if (kickCooldownTimer > 0)
-				kickCooldownTimer -= Time.deltaTime;
-
-			HandleRotation();
-			HandleInput();
-		}
-		else
-		{
-			// 操作不能時は物理・入力を止めるだけ
-			ForceStop();
-		}
-
-		// --- 描画更新は常に行う ---
+		HandleRotation();
+		HandleInput();
 		UpdateVisuals();
 	}
 
 	void FixedUpdate()
 	{
-		if (GameManager.Instance != null && !GameManager.Instance.IsPlaying())
-			return;
-
 		if (isGrappling)
 			HandleSwing();
-	}
-
-	// =====================
-	// 外部公開：色変更
-	// =====================
-
-	public void SetHairColor(Color color)
-	{
-		currentHairColor = color;
-		ApplyHairColor();
-	}
-
-	void ApplyHairColor()
-	{
-		if (hairRenderer == null) return;
-		hairRenderer.startColor = currentHairColor;
-		hairRenderer.endColor = currentHairColor;
 	}
 
 	// =====================
@@ -133,11 +104,19 @@ public class HairController : MonoBehaviour
 
 	void HandleInput()
 	{
+		// --- キック ---
 		if (Keyboard.current.spaceKey.wasPressedThisFrame)
+		{
 			TryKick();
+		}
 
+		// --- グラップル（髪伸ばし） ---
+		// キーを押した瞬間に、今回の「頑張る顔」をランダムで決める
 		if (Keyboard.current.fKey.wasPressedThisFrame)
+		{
+			// Random.Rangeのint版は、Maxが含まれないので +1 する
 			currentStrainFaceIndex = Random.Range(strainFaceMin, strainFaceMax + 1);
+		}
 
 		if (Keyboard.current.fKey.isPressed)
 		{
@@ -158,9 +137,10 @@ public class HairController : MonoBehaviour
 	void TryKick()
 	{
 		if (kickCooldownTimer > 0) return;
-
 		if (isGrappling)
+		{
 			ResetGrapple();
+		}
 
 		Vector2 root = GetRootPos();
 		Vector2 dir = transform.up;
@@ -170,9 +150,11 @@ public class HairController : MonoBehaviour
 		if (hit.collider == null || hit.collider.gameObject == gameObject)
 			return;
 
+		// 反動ジャンプ
 		rb.linearVelocity = Vector2.zero;
 		rb.AddForce(-dir * kickForce, ForceMode2D.Impulse);
 
+		// キックした瞬間に、今回の「怒り顔」をランダムで決める
 		currentKickFaceIndex = Random.Range(kickFaceMin, kickFaceMax + 1);
 
 		isKickFlashing = true;
@@ -250,21 +232,13 @@ public class HairController : MonoBehaviour
 		isMaxExtended = false;
 		currentLength = minLength;
 
+		if (joint != null)
+			Destroy(joint);
+
 		foreach (var j in GetComponents<DistanceJoint2D>())
 			Destroy(j);
 
 		isGrappling = false;
-	}
-
-	void ForceStop()
-	{
-		ResetGrapple();
-		isKickFlashing = false;
-		currentStrainFaceIndex = -1;
-		currentKickFaceIndex = -1;
-
-		if (rb != null)
-			rb.linearVelocity = Vector2.zero;
 	}
 
 	// =====================
@@ -291,18 +265,27 @@ public class HairController : MonoBehaviour
 
 	void UpdateVisuals()
 	{
+		// --- アニメーター制御 ---
 		if (faceAnimator != null)
 		{
-			int targetFace = -1;
+			int targetFace = -1; // デフォルト（真顔）
 
 			if (isKickFlashing)
+			{
+				// キック中：キック時に決定したランダムな顔
 				targetFace = currentKickFaceIndex;
+			}
 			else if (isExtending || isGrappling)
+			{
+				// 伸ばし中 or 掴まり中：キーを押した時に決定したランダムな顔
+				// ※長さによる変化は削除しました
 				targetFace = currentStrainFaceIndex;
+			}
 
 			faceAnimator.SetInteger("Face", targetFace);
 		}
 
+		// --- 描画処理 ---
 		Vector2 root = GetRootPos();
 
 		if (isKickFlashing)
@@ -318,5 +301,16 @@ public class HairController : MonoBehaviour
 
 		hairRenderer.SetPosition(0, root);
 		hairRenderer.SetPosition(1, tip);
+
+		if (isKickFlashing) SetColor(colorKick);
+		else if (isGrappling) SetColor(colorGrapple);
+		else if (isExtending) SetColor(colorExtending);
+		else SetColor(colorNormal);
+	}
+
+	void SetColor(Color c)
+	{
+		hairRenderer.startColor = c;
+		hairRenderer.endColor = c;
 	}
 }
