@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 399193929}
   - component: {fileID: 399193928}
   m_Layer: 5
-  m_Name: Hight
+  m_Name: HightUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
