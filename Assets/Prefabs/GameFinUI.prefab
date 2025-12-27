@@ -461,7 +461,7 @@ GameObject:
   - component: {fileID: 1412709267169797871}
   - component: {fileID: 7145353383527723075}
   m_Layer: 5
-  m_Name: ClearUI
+  m_Name: GameFinUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
