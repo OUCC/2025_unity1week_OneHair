@@ -80,3 +80,4 @@ crashlytics-build.properties
 
 # VS Code workspace settings
 .vscode/Settings.json
+.vscode/settings.json
