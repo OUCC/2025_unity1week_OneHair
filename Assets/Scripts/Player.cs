@@ -63,6 +63,11 @@ public class Player : MonoBehaviour
 
 	private int currentStrainFaceIndex = -1;
 	private int currentKickFaceIndex = -1;
+	[Header("Audio")]
+	public AudioSource sfxSource;              // 1発系
+	public AudioSource grappleLoopSource;      // 掴んでる間ループ
+	public AudioClip kickClip;
+	public AudioClip grappleLoopClip;
 
     [Header("HP Regeneration and Damage Settings")]
     [SerializeField]
@@ -180,7 +185,7 @@ public class Player : MonoBehaviour
 		}
 		else if (Keyboard.current.fKey.wasReleasedThisFrame)
 		{
-			ResetGrapple();
+			if (isExtending || isGrappling) ResetGrapple();
 		}
 	}
 
@@ -190,6 +195,7 @@ public class Player : MonoBehaviour
 
 	void TryKick()
 	{
+		Debug.Log($"Kick pressed. cooldown={kickCooldownTimer}, sfx={(sfxSource!=null)}, clip={(kickClip!=null)}");
 		if (kickCooldownTimer > 0) return;
 
 		if (isGrappling)
@@ -209,6 +215,11 @@ public class Player : MonoBehaviour
 		// 反動ジャンプ
 		rb.linearVelocity = Vector2.zero;
 		rb.AddForce(-dir * kickForce, ForceMode2D.Impulse);
+		if (sfxSource != null && kickClip != null)
+		{
+			sfxSource.PlayOneShot(kickClip);
+		}
+
 
 		currentKickFaceIndex = Random.Range(kickFaceMin, kickFaceMax + 1);
 
@@ -273,6 +284,14 @@ public class Player : MonoBehaviour
 		joint.maxDistanceOnly = true;
 		joint.distance = Vector2.Distance(transform.position, point);
 		joint.enableCollision = true;
+		if (grappleLoopSource != null && grappleLoopClip != null)
+		{
+			if (grappleLoopSource.clip != grappleLoopClip)
+				grappleLoopSource.clip = grappleLoopClip;
+
+			if (!grappleLoopSource.isPlaying)
+				grappleLoopSource.Play();
+		}
 	}
 
 	void HandleSwing()
@@ -293,6 +312,8 @@ public class Player : MonoBehaviour
 
 	void ResetGrapple()
 	{
+		if (grappleLoopSource != null && grappleLoopSource.isPlaying)
+    		grappleLoopSource.Stop();
 		isExtending = false;
 		isMaxExtended = false;
 		currentLength = minLength;
@@ -310,7 +331,13 @@ public class Player : MonoBehaviour
 
 	void ForceStop()
 	{
+
 		ResetGrapple();
+		if (grappleLoopSource != null && grappleLoopSource.isPlaying)
+		{
+			grappleLoopSource.Stop();
+		}
+
 		isKickFlashing = false;
 		currentStrainFaceIndex = -1;
 		currentKickFaceIndex = -1;
