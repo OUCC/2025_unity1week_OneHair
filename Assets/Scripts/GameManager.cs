@@ -28,12 +28,12 @@ public class GameManager : MonoBehaviour
 	[SerializeField] private TextMeshProUGUI timeText;
 	[SerializeField] private TextMeshProUGUI scoreText;
 	[SerializeField] private TextMeshProUGUI heightText;
-	[SerializeField] private Player player; 
+	[SerializeField] private Player player;
 
 	[SerializeField] private float heightOffset = 0f;
 
 	private Transform playerTransform;
-	
+
 	private void Awake()
 	{
 		// シーン内限定シングルトン
@@ -49,8 +49,6 @@ public class GameManager : MonoBehaviour
 	{
 		if (currentState != GameState.Playing) return;
 
-		if (Keyboard.current.gKey.isPressed) { GameOver(); }
-		if (Keyboard.current.hKey.isPressed) { ClearGame(); }
 
 		time += Time.deltaTime;
 
@@ -61,8 +59,9 @@ public class GameManager : MonoBehaviour
 		{
 			float currentHeight = playerTransform.position.y + heightOffset;
 			score = Mathf.FloorToInt(currentHeight);
-			if (currentHeight<-5.0f){
-				score=0;
+			if (currentHeight < -5.0f)
+			{
+				score = 0;
 				GameOver();
 			}
 
@@ -78,7 +77,7 @@ public class GameManager : MonoBehaviour
 
 		if (scoreText != null)
 			scoreText.text = "スコア：" + score + "m";
-		
+
 	}
 
 	void FindPlayer()
