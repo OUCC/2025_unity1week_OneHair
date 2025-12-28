@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 9120291015396596489}
   - component: {fileID: 1551097492146873377}
   - component: {fileID: 6823633662784200359}
+  - component: {fileID: 2950161489685474867}
   m_Layer: 0
   m_Name: Jump
   m_TagString: Untagged
@@ -28,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -4.74, y: -1.99, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -80,7 +81,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -7670871304486961529, guid: 05585768c75e54f75a7fab79932ec6df, type: 3}
+  m_Sprite: {fileID: 5450751567218131724, guid: 05585768c75e54f75a7fab79932ec6df, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -113,3 +114,15 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2950161489685474867
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7886521424314198419}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e29535e8b78f542c79bbe5ae4de20cb9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DestoroySelf
