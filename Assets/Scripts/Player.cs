@@ -84,6 +84,11 @@ public class Player : MonoBehaviour
 
 	private float GrappleDamageCount = 0f;
 
+	[Header("Hair Fall Settings")]
+	[SerializeField] private float hairFallSpeed = 0.5f;
+	private bool isDead = false;
+	private Vector2 hairFallTip;
+
 	// =====================
 	// Unity
 	// =====================
@@ -104,7 +109,7 @@ public class Player : MonoBehaviour
 	{
 		bool isPlaying = GameManager.Instance == null || GameManager.Instance.IsPlaying();
 
-		if (isPlaying)
+		if (isPlaying && !isDead)
 		{
 			if (Mouse.current == null || Keyboard.current == null) return;
 
@@ -114,9 +119,14 @@ public class Player : MonoBehaviour
 			HandleRotation();
 			HandleInput();
 		}
-		else
+		else if (!isPlaying)
 		{
 			ForceStop();
+		}
+
+		if (isDead)
+		{
+			UpdateHairFall();
 		}
 
 		UpdateVisuals();
@@ -374,7 +384,7 @@ public class Player : MonoBehaviour
 
 	void UpdateVisuals()
 	{
-		if (faceAnimator != null)
+		if (faceAnimator != null && !isDead)
 		{
 			int targetFace = -1;
 			if (isKickFlashing)
@@ -393,10 +403,16 @@ public class Player : MonoBehaviour
 		}
 
 		Vector2 root = GetRootPos();
-		Vector2 tip = isGrappling ? grapplePoint : root + (Vector2)transform.up * currentLength;
+		Vector2 tip = isDead ? hairFallTip : (isGrappling ? grapplePoint : root + (Vector2)transform.up * currentLength);
 
 		hairRenderer.SetPosition(0, root);
 		hairRenderer.SetPosition(1, tip);
+	}
+
+	void UpdateHairFall()
+	{
+		// 髪の毛を下に落としていく
+		hairFallTip.y -= hairFallSpeed * Time.deltaTime;
 	}
 
 	void ApplyHairColor()
@@ -421,6 +437,19 @@ public class Player : MonoBehaviour
 		if (amount <= 0) return;
 		currentHP = Mathf.Max(0, currentHP - amount);
 		UpdateHP();
+
+		if (currentHP <= 0 && !isDead)
+		{
+			OnPlayerDeath();
+		}
+	}
+
+	void OnPlayerDeath()
+	{
+		isDead = true;
+		Vector2 root = GetRootPos();
+		hairFallTip = root + (Vector2)transform.up * currentLength;
+		ForceStop();
 	}
 
 	public void Heal(float amount)
