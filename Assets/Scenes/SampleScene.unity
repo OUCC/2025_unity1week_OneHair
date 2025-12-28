@@ -3247,7 +3247,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4811028189250424343, guid: ca98f0ba6198e40fbab72476c3e1a13a, type: 3}
       propertyPath: m_Name
-      value: GameFinUI_
+      value: GameFinUI
       objectReference: {fileID: 0}
     - target: {fileID: 4811028189250424343, guid: ca98f0ba6198e40fbab72476c3e1a13a, type: 3}
       propertyPath: m_IsActive
