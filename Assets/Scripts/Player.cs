@@ -288,6 +288,7 @@ public class Player : MonoBehaviour
 		isMaxExtended = false;
 		currentLength = minLength;
         Damage(grappleOffDamage);
+        Debug.Log("Grapple Off Damage: " + grappleOffDamage);
 
 		foreach (var j in GetComponents<DistanceJoint2D>())
 			Destroy(j);
@@ -376,9 +377,10 @@ public class Player : MonoBehaviour
         if (currentHP <= 0)
         {
             //ゲームオーバー
-            isDead = true;
-            
+            GameManager.Instance.GameOver();
         }
+
+        Debug.Log("update HP");
     }
 
     public void Damage(float amount)
