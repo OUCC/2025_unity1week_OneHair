@@ -33,10 +33,20 @@ public class GameManager : MonoBehaviour
 
 	private Transform playerTransform;
 
+	private void Awake()
+	{
+		// シーン内限定シングルトン
+		if (Instance != null && Instance != this)
+		{
+			Destroy(gameObject);
+			return;
+		}
+		Instance = this;
+	}
+
 	private void Update()
 	{
 		if (currentState != GameState.Playing) return;
-
 
 		if (Keyboard.current.gKey.isPressed) { GameOver(); }
 		if (Keyboard.current.hKey.isPressed) { ClearGame(); }
@@ -50,6 +60,7 @@ public class GameManager : MonoBehaviour
 		{
 			float currentHeight = playerTransform.position.y + heightOffset;
 			score = Mathf.FloorToInt(currentHeight);
+
 			if (currentHeight > maxHeight)
 				score = Mathf.FloorToInt(maxHeight);
 
@@ -61,7 +72,7 @@ public class GameManager : MonoBehaviour
 			timeText.text = "時間：" + time.ToString("F2") + " 秒";
 
 		if (scoreText != null)
-			scoreText.text = "スコア：" + score.ToString() + "m";
+			scoreText.text = "スコア：" + score + "m";
 	}
 
 	void FindPlayer()
@@ -73,15 +84,15 @@ public class GameManager : MonoBehaviour
 
 	public void ClearGame()
 	{
-		FinUI.SetActive(true);
 		currentState = GameState.Clear;
+		if (FinUI != null) FinUI.SetActive(true);
 		if (clearUI != null) clearUI.SetActive(true);
 	}
 
 	public void GameOver()
 	{
 		currentState = GameState.GameOver;
-		FinUI.SetActive(true);
+		if (FinUI != null) FinUI.SetActive(true);
 		if (gameOverUI != null) gameOverUI.SetActive(true);
 	}
 
