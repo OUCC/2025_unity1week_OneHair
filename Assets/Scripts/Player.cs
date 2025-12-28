@@ -135,11 +135,19 @@ public class Player : MonoBehaviour
 			HandleSwing();
 	}
 
-	// =====================
-	// 入力
-	// =====================
+    void OnTriggerEnter2D(Collider2D collision)
+    {
+        IItem item = collision.GetComponent<IItem>();
+        if (item != null)
+        {
+            item.OnPickup(gameObject);
+        }
+    }
+    // =====================
+    // 入力
+    // =====================
 
-	void HandleInput()
+    void HandleInput()
 	{
 		if (Keyboard.current.spaceKey.wasPressedThisFrame)
 			TryKick();
