@@ -245,14 +245,8 @@ public class Player : MonoBehaviour
 
 		if (!extendOnce)
 		{
-			float speed = (maxLength - minLength) / Mathf.Max(extendDuration, 0.001f);
-			currentLength += speed * Time.deltaTime;
-
-			if (currentLength >= maxLength)
-			{
-				currentLength = maxLength;
-				isMaxExtended = true;
-			}
+			SpawnExtendEffect(GetRootPos());
+			extendOnce = true;
 		}
 
 		Vector2 root = GetRootPos();
