@@ -952,8 +952,8 @@ MonoBehaviour:
   extendDuration: 0.1
   rootOffset: 0.5
   kickRange: 0.6
-  kickForce: 7
-  kickUpperForce: 4
+  kickForce: 5
+  kickUpperForce: 3
   kickCooldown: 0.1
   kickFlashTime: 0.1
   hpSlider: {fileID: 1525298297}
@@ -1072,7 +1072,7 @@ Transform:
   m_GameObject: {fileID: 541550207}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.74, y: 73.5, z: 0}
+  m_LocalPosition: {x: -5.74, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
