@@ -953,6 +953,7 @@ MonoBehaviour:
   rootOffset: 0.5
   kickRange: 0.6
   kickForce: 7
+  kickUpperForce: 4
   kickCooldown: 0.1
   kickFlashTime: 0.1
   hpSlider: {fileID: 1525298297}
