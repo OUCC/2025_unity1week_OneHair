@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
-public class HairController : MonoBehaviour
+public class Player : MonoBehaviour
 {
 	// =====================
 	// 設定
@@ -18,6 +19,11 @@ public class HairController : MonoBehaviour
 	public float kickForce = 20f;
 	public float kickCooldown = 1.0f;
 	public float kickFlashTime = 0.1f;
+
+    [Header("HP Settings")]
+    public Slider hpSlider;
+    public float maxHP = 100f;
+    public float currentHP = 100f;
 
 	[Header("Grapple")]
 	public float swingForce = 20f;
@@ -58,6 +64,22 @@ public class HairController : MonoBehaviour
 	private int currentStrainFaceIndex = -1;
 	private int currentKickFaceIndex = -1;
 
+    [Header("HP Regeneration and Damage Settings")]
+    [SerializeField]
+    private float GrappleDamageAmount = 1.0f;
+    [SerializeField]
+    private float GrappleDamageInterval = 0.5f;
+
+    private float GrappleDamageCount = 0f;
+
+    [SerializeField] 
+    private float grappleOffDamage = 10f;
+
+    [SerializeField]
+    private float kickDamageAmount = 5f;
+
+    private bool isDead = false;
+
 	// =====================
 	// Unity
 	// =====================
@@ -71,6 +93,8 @@ public class HairController : MonoBehaviour
 		hairRenderer.useWorldSpace = true;
 
 		currentLength = minLength;
+
+        updateHP();
 		ApplyHairColor();
 	}
 
@@ -110,11 +134,20 @@ public class HairController : MonoBehaviour
 			HandleSwing();
 	}
 
-	// =====================
-	// 外部公開：色変更
-	// =====================
+    void OnTriggerEnter2D(Collider2D collision)
+    {
+        IItem item = collision.gameObject.GetComponent<IItem>();
+        if (item != null && GameManager.Instance != null && GameManager.Instance.IsPlaying())
+        {
+            item.OnPickup(gameObject);
+        }
+    }
 
-	public void SetHairColor(Color color)
+    // =====================
+    // 外部公開：色変更
+    // =====================
+
+    public void SetHairColor(Color color)
 	{
 		currentHairColor = color;
 		ApplyHairColor();
@@ -145,7 +178,7 @@ public class HairController : MonoBehaviour
 			if (!isGrappling)
 				ProcessGrappleExtension();
 		}
-		else
+		else if (Keyboard.current.fKey.wasReleasedThisFrame)
 		{
 			ResetGrapple();
 		}
@@ -170,6 +203,10 @@ public class HairController : MonoBehaviour
 		if (hit.collider == null || hit.collider.gameObject == gameObject)
 			return;
 
+        // キックダメージ
+        Damage(kickDamageAmount);
+
+		// 反動ジャンプ
 		rb.linearVelocity = Vector2.zero;
 		rb.AddForce(-dir * kickForce, ForceMode2D.Impulse);
 
@@ -205,7 +242,7 @@ public class HairController : MonoBehaviour
 
 		RaycastHit2D hit = Physics2D.Raycast(root, dir, currentLength);
 
-		if (hit.collider == null || hit.collider.gameObject == gameObject)
+		if (hit.collider == null || hit.collider.gameObject == gameObject || hit.collider.isTrigger)
 			return;
 
 		if (isMaxExtended && !isGrappling)
@@ -240,6 +277,16 @@ public class HairController : MonoBehaviour
 
 	void HandleSwing()
 	{
+        //継続ダメージ
+        if (GrappleDamageCount > GrappleDamageInterval)
+        {
+            GrappleDamageCount -= GrappleDamageInterval;
+            Damage(GrappleDamageAmount);
+        }
+
+        //継続ダメージ用カウントアップ
+        GrappleDamageCount += Time.deltaTime;
+
 		Vector2 dir = (mousePos - (Vector2)transform.position).normalized;
 		rb.AddForce(dir * swingForce);
 	}
@@ -249,11 +296,16 @@ public class HairController : MonoBehaviour
 		isExtending = false;
 		isMaxExtended = false;
 		currentLength = minLength;
+        Damage(grappleOffDamage);
+        Debug.Log("Grapple Off Damage: " + grappleOffDamage);
 
 		foreach (var j in GetComponents<DistanceJoint2D>())
 			Destroy(j);
 
 		isGrappling = false;
+
+        //継続ダメージのカウントをリセット
+        GrappleDamageCount = 0f;
 	}
 
 	void ForceStop()
@@ -319,4 +371,58 @@ public class HairController : MonoBehaviour
 		hairRenderer.SetPosition(0, root);
 		hairRenderer.SetPosition(1, tip);
 	}
+
+	void SetColor(Color c)
+	{
+		hairRenderer.startColor = c;
+		hairRenderer.endColor = c;
+	}
+
+    private void updateHP()
+    {
+        hpSlider.maxValue = maxHP;
+        hpSlider.value = currentHP;
+
+        if (currentHP <= 0)
+        {
+            //ゲームオーバー
+            GameManager.Instance.GameOver();
+        }
+
+        Debug.Log("update HP");
+    }
+
+    public void Damage(float amount)
+    {
+        if (amount <= 0) 
+        {
+            return;
+        }
+
+        currentHP -= amount;
+
+        if (currentHP <= 0) 
+        {
+            currentHP = 0;
+        }
+
+        updateHP();
+    }
+
+    public void Heal(float amount)
+    {
+        if (amount <= 0) 
+        {
+            return;
+        }
+
+        currentHP += amount;
+
+        if (currentHP >= maxHP) 
+        {
+            currentHP = maxHP;
+        }
+
+        updateHP();
+    }
 }
