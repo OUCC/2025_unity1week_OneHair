@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
-
 public class Player : MonoBehaviour
 {
 	// =====================
@@ -20,7 +19,6 @@ public class Player : MonoBehaviour
 	public float kickUpperForce = 10f;
 	public float kickCooldown = 1.0f;
 	public float kickFlashTime = 0.1f;
-	public KickTrigger kickTrigger;
 
 	[Header("HP Settings")]
 	public Slider hpSlider;
@@ -48,17 +46,6 @@ public class Player : MonoBehaviour
 	[SerializeField] private GameObject extendEffectPrefab;
 	[SerializeField] private GameObject grappleHitEffectPrefab;
 
-	[Header("Audio")]
-	public AudioSource sfxSource;
-	public AudioSource grappleLoopSource;
-	public AudioClip kickClip;
-	public AudioClip grappleLoopClip;
-
-	[Header("Damage Settings")]
-	[SerializeField] private float GrappleDamageAmount = 1.0f;
-	[SerializeField] private float GrappleDamageInterval = 0.5f;
-	[SerializeField] private float grappleOffDamage = 10f;
-	[SerializeField] private float kickDamageAmount = 5f;
 
 	// =====================
 	// 内部
@@ -73,7 +60,7 @@ public class Player : MonoBehaviour
 	private bool isMaxExtended;
 	private bool isGrappling;
 
-	private bool extendOnce;
+	private bool extendOnce = false;
 	private float kickCooldownTimer;
 	private float kickFlashTimer;
 	private bool isKickFlashing;
@@ -83,6 +70,18 @@ public class Player : MonoBehaviour
 
 	private int currentStrainFaceIndex = -1;
 	private int currentKickFaceIndex = -1;
+	[Header("Audio")]
+	public AudioSource sfxSource;              // 1発系
+	public AudioSource grappleLoopSource;      // 掴んでる間ループ
+	public AudioClip kickClip;
+	public AudioClip grappleLoopClip;
+
+
+	[Header("Damage Settings")]
+	[SerializeField] private float GrappleDamageAmount = 1.0f;
+	[SerializeField] private float GrappleDamageInterval = 0.5f;
+	[SerializeField] private float grappleOffDamage = 10f;
+	[SerializeField] private float kickDamageAmount = 5f;
 
 	private float GrappleDamageCount = 0f;
 
@@ -105,20 +104,45 @@ public class Player : MonoBehaviour
 
 	void Update()
 	{
-		if (kickCooldownTimer > 0)
-			kickCooldownTimer -= Time.deltaTime;
+		bool isPlaying =
+			GameManager.Instance == null ||
+			GameManager.Instance.IsPlaying();
 
-		HandleRotation();
-		HandleInput();
+		if (isPlaying)
+		{
+			if (Mouse.current == null || Keyboard.current == null) return;
+
+			if (kickCooldownTimer > 0)
+				kickCooldownTimer -= Time.deltaTime;
+
+			HandleRotation();
+			HandleInput();
+		}
+		else
+		{
+			ForceStop();
+		}
+
 		UpdateVisuals();
 	}
 
 	void FixedUpdate()
 	{
+		if (GameManager.Instance != null && !GameManager.Instance.IsPlaying())
+			return;
+
 		if (isGrappling)
 			HandleSwing();
 	}
 
+	void OnTriggerEnter2D(Collider2D collision)
+	{
+		IItem item = collision.GetComponent<IItem>();
+		if (item != null)
+		{
+			item.OnPickup(gameObject);
+		}
+	}
 	// =====================
 	// 入力
 	// =====================
@@ -139,33 +163,42 @@ public class Player : MonoBehaviour
 		}
 		else if (Keyboard.current.fKey.wasReleasedThisFrame)
 		{
-			if (isExtending || isGrappling)
-				ResetGrapple();
+			if (isExtending || isGrappling) ResetGrapple();
 		}
 	}
 
 	// =====================
-	// キック
+	// キック（ジャンプ）
 	// =====================
 
 	void TryKick()
 	{
+		Debug.Log($"Kick pressed. cooldown={kickCooldownTimer}, sfx={(sfxSource != null)}, clip={(kickClip != null)}");
 		if (kickCooldownTimer > 0) return;
-		if (kickTrigger == null || !kickTrigger.HasTarget) return;
+
+
+		Vector2 root = GetRootPos();
+		Vector2 dir = transform.up;
+
+		RaycastHit2D hit = Physics2D.Raycast(root, dir, kickRange);
+
+		if (hit.collider == null || hit.collider.gameObject == gameObject)
+			return;
 
 		if (isGrappling)
 			ResetGrapple();
 
 		Damage(kickDamageAmount);
 
-		Vector2 dir = transform.up;
 		rb.linearVelocity = Vector2.zero;
 		rb.AddForce(-dir * kickForce + Vector2.up * kickUpperForce, ForceMode2D.Impulse);
-
 		if (sfxSource != null && kickClip != null)
+		{
 			sfxSource.PlayOneShot(kickClip);
+		}
 
-		SpawnJumpEffect(GetRootPos(), -dir);
+
+		SpawnJumpEffect(root, -dir);
 
 		currentKickFaceIndex = Random.Range(kickFaceMin, kickFaceMax + 1);
 		isKickFlashing = true;
@@ -176,7 +209,11 @@ public class Player : MonoBehaviour
 	void SpawnJumpEffect(Vector2 position, Vector2 direction)
 	{
 		if (jumpEffectPrefab == null) return;
-		float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+
+		float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+		//zに)90度足すことで、エフェクトが進行方向を向くようにする
+
+		angle -= 90f;
 		Instantiate(jumpEffectPrefab, position, Quaternion.Euler(0, 0, angle));
 	}
 
@@ -188,32 +225,91 @@ public class Player : MonoBehaviour
 	{
 		isExtending = true;
 
-		float speed = (maxLength - minLength) / Mathf.Max(extendDuration, 0.001f);
-		currentLength = Mathf.Min(maxLength, currentLength + speed * Time.deltaTime);
-		isMaxExtended = currentLength >= maxLength;
-
-		if (!extendOnce)
+		if (!isMaxExtended)
 		{
-			extendOnce = true;
-			SpawnExtendEffect(GetRootPos());
+			float speed = (maxLength - minLength) / Mathf.Max(extendDuration, 0.001f);
+			currentLength += speed * Time.deltaTime;
+
+			if (currentLength >= maxLength)
+			{
+				currentLength = maxLength;
+				isMaxExtended = true;
+			}
 		}
+
+		if (!extendOnce) { extendOnce = true; SpawnExtendEffect(GetRootPos()); }
+
+		Vector2 root = GetRootPos();
+		Vector2 dir = transform.up;
+
+		RaycastHit2D hit = Physics2D.Raycast(root, dir, currentLength);
+
+		if (hit.collider == null || hit.collider.gameObject == gameObject || hit.collider.isTrigger)
+			return;
+
+		if (isMaxExtended && !isGrappling)
+			StartGrapple(hit.point, hit.collider.gameObject);
 	}
 
 	void SpawnExtendEffect(Vector2 position)
 	{
 		if (extendEffectPrefab == null) return;
+		//angle は自分の向き+90度
 		float angle = transform.eulerAngles.z + 90f;
 		Instantiate(extendEffectPrefab, position, Quaternion.Euler(0, 0, angle));
 	}
 
+	void StartGrapple(Vector2 point, GameObject hitObject)
+	{
+		isGrappling = true;
+		isExtending = false;
+		grapplePoint = point;
+
+		SpawnGrappleHitEffect(point);
+
+		joint = gameObject.AddComponent<DistanceJoint2D>();
+		joint.autoConfigureConnectedAnchor = false;
+
+		Rigidbody2D hitRb = hitObject.GetComponent<Rigidbody2D>();
+		if (hitRb != null)
+		{
+			joint.connectedBody = hitRb;
+			joint.connectedAnchor = hitObject.transform.InverseTransformPoint(point);
+		}
+		else
+		{
+			joint.connectedAnchor = point;
+		}
+
+		joint.anchor = Vector2.zero;
+		joint.maxDistanceOnly = true;
+		joint.distance = Vector2.Distance(transform.position, point);
+		joint.enableCollision = true;
+		if (grappleLoopSource != null && grappleLoopClip != null)
+		{
+			if (grappleLoopSource.clip != grappleLoopClip)
+				grappleLoopSource.clip = grappleLoopClip;
+
+			if (!grappleLoopSource.isPlaying)
+				grappleLoopSource.Play();
+		}
+	}
+
+	void SpawnGrappleHitEffect(Vector2 position)
+	{
+		if (grappleHitEffectPrefab == null) return;
+		Instantiate(grappleHitEffectPrefab, position, Quaternion.identity);
+	}
+
 	void HandleSwing()
 	{
-		GrappleDamageCount += Time.deltaTime;
-		if (GrappleDamageCount >= GrappleDamageInterval)
+		if (GrappleDamageCount > GrappleDamageInterval)
 		{
-			GrappleDamageCount = 0f;
+			GrappleDamageCount -= GrappleDamageInterval;
 			Damage(GrappleDamageAmount);
 		}
+
+		GrappleDamageCount += Time.deltaTime;
 
 		Vector2 dir = (mousePos - (Vector2)transform.position).normalized;
 		rb.AddForce(dir * swingForce);
@@ -223,18 +319,34 @@ public class Player : MonoBehaviour
 	{
 		if (grappleLoopSource != null && grappleLoopSource.isPlaying)
 			grappleLoopSource.Stop();
-
 		isExtending = false;
 		extendOnce = false;
 		isMaxExtended = false;
 		currentLength = minLength;
-		isGrappling = false;
-		GrappleDamageCount = 0f;
 
 		Damage(grappleOffDamage);
 
 		foreach (var j in GetComponents<DistanceJoint2D>())
 			Destroy(j);
+
+		isGrappling = false;
+		GrappleDamageCount = 0f;
+	}
+
+	void ForceStop()
+	{
+
+		ResetGrapple();
+		if (grappleLoopSource != null && grappleLoopSource.isPlaying)
+		{
+			grappleLoopSource.Stop();
+		}
+
+		isKickFlashing = false;
+		currentStrainFaceIndex = -1;
+		currentKickFaceIndex = -1;
+
+		rb.linearVelocity = Vector2.zero;
 	}
 
 	// =====================
@@ -244,6 +356,7 @@ public class Player : MonoBehaviour
 	void HandleRotation()
 	{
 		mousePos = mainCam.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+
 		Vector2 dir = mousePos - (Vector2)transform.position;
 		float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
 		rb.MoveRotation(angle);
@@ -256,12 +369,17 @@ public class Player : MonoBehaviour
 
 	void UpdateVisuals()
 	{
-		int face = -1;
-		if (isKickFlashing) face = currentKickFaceIndex;
-		else if (isExtending || isGrappling) face = currentStrainFaceIndex;
-
 		if (faceAnimator != null)
-			faceAnimator.SetInteger("Face", face);
+		{
+			int targetFace = -1;
+
+			if (isKickFlashing)
+				targetFace = currentKickFaceIndex;
+			else if (isExtending || isGrappling)
+				targetFace = currentStrainFaceIndex;
+
+			faceAnimator.SetInteger("Face", targetFace);
+		}
 
 		if (isKickFlashing)
 		{
@@ -271,7 +389,10 @@ public class Player : MonoBehaviour
 		}
 
 		Vector2 root = GetRootPos();
-		Vector2 tip = root + (Vector2)transform.up * currentLength;
+		Vector2 tip =
+			isGrappling ? grapplePoint :
+			root + (Vector2)transform.up * currentLength;
+
 		hairRenderer.SetPosition(0, root);
 		hairRenderer.SetPosition(1, tip);
 	}
@@ -290,6 +411,9 @@ public class Player : MonoBehaviour
 	{
 		hpSlider.maxValue = maxHP;
 		hpSlider.value = currentHP;
+
+		if (currentHP <= 0)
+			GameManager.Instance.GameOver();
 	}
 
 	public void Damage(float amount)
@@ -299,5 +423,10 @@ public class Player : MonoBehaviour
 		UpdateHP();
 	}
 
-	public void Heal(float amount) { if (amount <= 0) return; currentHP = Mathf.Min(maxHP, currentHP + amount); UpdateHP(); }
+	public void Heal(float amount)
+	{
+		if (amount <= 0) return;
+		currentHP = Mathf.Min(maxHP, currentHP + amount);
+		UpdateHP();
+	}
 }
