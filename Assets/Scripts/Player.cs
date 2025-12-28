@@ -134,11 +134,20 @@ public class Player : MonoBehaviour
 			HandleSwing();
 	}
 
-	// =====================
-	// 外部公開：色変更
-	// =====================
+    void OnTriggerEnter2D(Collider2D collision)
+    {
+        IItem item = collision.gameObject.GetComponent<IItem>();
+        if (item != null && GameManager.Instance != null && GameManager.Instance.IsPlaying())
+        {
+            item.OnPickup(gameObject);
+        }
+    }
 
-	public void SetHairColor(Color color)
+    // =====================
+    // 外部公開：色変更
+    // =====================
+
+    public void SetHairColor(Color color)
 	{
 		currentHairColor = color;
 		ApplyHairColor();
@@ -233,7 +242,7 @@ public class Player : MonoBehaviour
 
 		RaycastHit2D hit = Physics2D.Raycast(root, dir, currentLength);
 
-		if (hit.collider == null || hit.collider.gameObject == gameObject)
+		if (hit.collider == null || hit.collider.gameObject == gameObject || hit.collider.isTrigger)
 			return;
 
 		if (isMaxExtended && !isGrappling)
