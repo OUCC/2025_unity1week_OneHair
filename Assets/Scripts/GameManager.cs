@@ -33,17 +33,6 @@ public class GameManager : MonoBehaviour
 
 	private Transform playerTransform;
 
-	private void Awake()
-	{
-		if (Instance != null)
-		{
-			Destroy(gameObject);
-			return;
-		}
-		Instance = this;
-		DontDestroyOnLoad(gameObject);
-	}
-
 	private void Update()
 	{
 		if (currentState != GameState.Playing) return;
