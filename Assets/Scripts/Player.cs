@@ -165,11 +165,9 @@ public class Player : MonoBehaviour
 
 	void TryKick()
 	{
-		Debug.Log($"Kick pressed. cooldown={kickCooldownTimer}, sfx={(sfxSource!=null)}, clip={(kickClip!=null)}");
+		Debug.Log($"Kick pressed. cooldown={kickCooldownTimer}, sfx={(sfxSource != null)}, clip={(kickClip != null)}");
 		if (kickCooldownTimer > 0) return;
 
-		if (isGrappling)
-			ResetGrapple();
 
 		Vector2 root = GetRootPos();
 		Vector2 dir = transform.up;
@@ -178,6 +176,9 @@ public class Player : MonoBehaviour
 
 		if (hit.collider == null || hit.collider.gameObject == gameObject)
 			return;
+
+		if (isGrappling)
+			ResetGrapple();
 
 		Damage(kickDamageAmount);
 
@@ -309,7 +310,7 @@ public class Player : MonoBehaviour
 	void ResetGrapple()
 	{
 		if (grappleLoopSource != null && grappleLoopSource.isPlaying)
-    		grappleLoopSource.Stop();
+			grappleLoopSource.Stop();
 		isExtending = false;
 		extendOnce = false;
 		isMaxExtended = false;

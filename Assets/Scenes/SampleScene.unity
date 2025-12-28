@@ -926,8 +926,6 @@ GameObject:
   - component: {fileID: 541550210}
   - component: {fileID: 541550209}
   - component: {fileID: 541550213}
-  - component: {fileID: 541550215}
-  - component: {fileID: 541550214}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -951,7 +949,7 @@ MonoBehaviour:
   maxLength: 2
   extendDuration: 0.1
   rootOffset: 0.5
-  kickRange: 2
+  kickRange: 0.6
   kickForce: 7
   kickCooldown: 0.1
   kickFlashTime: 0.1
@@ -969,7 +967,10 @@ MonoBehaviour:
   jumpEffectPrefab: {fileID: 7886521424314198419, guid: 9e8021b92bc47422a9b256b57bf1ad9c, type: 3}
   extendEffectPrefab: {fileID: 7886521424314198419, guid: ff98fd8d8f04e46b08d15f06602a1bbc, type: 3}
   grappleHitEffectPrefab: {fileID: 7886521424314198419, guid: 65452a0a795cd4f2fb8e1a053a994112, type: 3}
-  extendEffectInterval: 0.05
+  sfxSource: {fileID: 0}
+  grappleLoopSource: {fileID: 0}
+  kickClip: {fileID: 0}
+  grappleLoopClip: {fileID: 0}
   GrappleDamageAmount: 1
   GrappleDamageInterval: 0.5
   grappleOffDamage: 10
