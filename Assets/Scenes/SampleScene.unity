@@ -966,6 +966,10 @@ MonoBehaviour:
   strainFaceMax: 3
   kickFaceMin: 4
   kickFaceMax: 7
+  jumpEffectPrefab: {fileID: 7886521424314198419, guid: 9e8021b92bc47422a9b256b57bf1ad9c, type: 3}
+  extendEffectPrefab: {fileID: 7886521424314198419, guid: ff98fd8d8f04e46b08d15f06602a1bbc, type: 3}
+  grappleHitEffectPrefab: {fileID: 7886521424314198419, guid: 65452a0a795cd4f2fb8e1a053a994112, type: 3}
+  extendEffectInterval: 0.05
   GrappleDamageAmount: 1
   GrappleDamageInterval: 0.5
   grappleOffDamage: 10
