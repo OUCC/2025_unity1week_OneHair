@@ -1873,7 +1873,7 @@ MonoBehaviour:
   time: 0
   score: 0
   maxHeight: 100
-  FinUI: {fileID: 4811028189250424343, guid: ca98f0ba6198e40fbab72476c3e1a13a, type: 3}
+  FinUI: {fileID: 1628071073}
   clearUI: {fileID: 1653494242}
   gameOverUI: {fileID: 1653494241}
   timeText: {fileID: 1653494239}
@@ -3071,6 +3071,11 @@ Transform:
 Transform:
   m_CorrespondingSourceObject: {fileID: 2405651684979509075, guid: e20f37dc14db89a4da713963018f42d5, type: 3}
   m_PrefabInstance: {fileID: 190464956}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1628071073 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4811028189250424343, guid: ca98f0ba6198e40fbab72476c3e1a13a, type: 3}
+  m_PrefabInstance: {fileID: 1653494237}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1646601535
 GameObject:
