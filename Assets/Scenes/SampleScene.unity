@@ -826,7 +826,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -5.82, y: 0.57, z: -10}
+  m_LocalPosition: {x: -5.82, y: 12.31, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -953,7 +953,7 @@ MonoBehaviour:
   rootOffset: 0.5
   kickRange: 0.6
   kickForce: 5
-  kickUpperForce: 3.5
+  kickUpperForce: 3
   kickCooldown: 0.1
   kickFlashTime: 0.1
   hpSlider: {fileID: 1525298297}
@@ -1072,7 +1072,7 @@ Transform:
   m_GameObject: {fileID: 541550207}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.74, y: 0, z: 0}
+  m_LocalPosition: {x: -5.74, y: 12.38, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2090,7 +2090,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2405651684979509075, guid: e20f37dc14db89a4da713963018f42d5, type: 3}
       propertyPath: m_LocalScale.x
-      value: 8.15878
+      value: 11.512855
       objectReference: {fileID: 0}
     - target: {fileID: 2405651684979509075, guid: e20f37dc14db89a4da713963018f42d5, type: 3}
       propertyPath: m_LocalScale.y
@@ -2098,7 +2098,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2405651684979509075, guid: e20f37dc14db89a4da713963018f42d5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 5.1902895
+      value: 4.0271
       objectReference: {fileID: 0}
     - target: {fileID: 2405651684979509075, guid: e20f37dc14db89a4da713963018f42d5, type: 3}
       propertyPath: m_LocalPosition.y
