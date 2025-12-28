@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
-
 public class Player : MonoBehaviour
 {
 	[Header("Hair Specs")]
@@ -47,27 +46,35 @@ public class Player : MonoBehaviour
 	[SerializeField] private GameObject extendEffectPrefab;
 	[SerializeField] private GameObject grappleHitEffectPrefab;
 
+	// =====================
+	// 内部
+	// =====================
+
 	private Rigidbody2D rb;
 	private Camera mainCam;
 	private Vector2 mousePos;
+
 	private float currentLength;
 	private bool isExtending;
 	private bool isMaxExtended;
 	private bool isGrappling;
+
 	private bool extendOnce = false;
 	private float kickCooldownTimer;
 	private float kickFlashTimer;
 	private bool isKickFlashing;
+
 	private Vector2 grapplePoint;
 	private DistanceJoint2D joint;
+
 	private int currentStrainFaceIndex = -1;
 	private int currentKickFaceIndex = -1;
-
 	[Header("Audio")]
-	public AudioSource sfxSource;           // 1発系
-	public AudioSource grappleLoopSource;   // 掴んでる間ループ
+	public AudioSource sfxSource;              // 1発系
+	public AudioSource grappleLoopSource;      // 掴んでる間ループ
 	public AudioClip kickClip;
 	public AudioClip grappleLoopClip;
+
 
 	[Header("Damage Settings")]
 	[SerializeField] private float GrappleDamageAmount = 1.0f;
@@ -118,7 +125,6 @@ public class Player : MonoBehaviour
 	void FixedUpdate()
 	{
 		if (GameManager.Instance != null && !GameManager.Instance.IsPlaying()) return;
-
 		if (isGrappling)
 			HandleSwing();
 	}
@@ -163,8 +169,17 @@ public class Player : MonoBehaviour
 	// =====================
 	void TryKick()
 	{
+		Debug.Log($"Kick pressed. cooldown={kickCooldownTimer}, sfx={(sfxSource != null)}, clip={(kickClip != null)}");
 		if (kickCooldownTimer > 0) return;
-		if (kickTrigger == null || !kickTrigger.HasTarget) return;
+
+
+		Vector2 root = GetRootPos();
+		Vector2 dir = transform.up;
+
+		RaycastHit2D hit = Physics2D.Raycast(root, dir, kickRange);
+
+		if (hit.collider == null || hit.collider.gameObject == gameObject)
+			return;
 
 		if (isGrappling)
 			ResetGrapple();
@@ -173,14 +188,15 @@ public class Player : MonoBehaviour
 
 		Damage(kickDamageAmount);
 
-		Vector2 dir = transform.up;
 		rb.linearVelocity = Vector2.zero;
 		rb.AddForce(-dir * kickForce + Vector2.up * kickUpperForce, ForceMode2D.Impulse);
-
 		if (sfxSource != null && kickClip != null)
+		{
 			sfxSource.PlayOneShot(kickClip);
+		}
 
-		SpawnJumpEffect(GetRootPos(), -dir);
+
+		SpawnJumpEffect(root, -dir);
 
 		currentKickFaceIndex = Random.Range(kickFaceMin, kickFaceMax + 1);
 		isKickFlashing = true;
@@ -218,8 +234,14 @@ public class Player : MonoBehaviour
 
 		if (!extendOnce)
 		{
-			extendOnce = true;
-			SpawnExtendEffect(GetRootPos());
+			float speed = (maxLength - minLength) / Mathf.Max(extendDuration, 0.001f);
+			currentLength += speed * Time.deltaTime;
+
+			if (currentLength >= maxLength)
+			{
+				currentLength = maxLength;
+				isMaxExtended = true;
+			}
 		}
 
 		Vector2 root = GetRootPos();
@@ -237,6 +259,7 @@ public class Player : MonoBehaviour
 	void SpawnExtendEffect(Vector2 position)
 	{
 		if (extendEffectPrefab == null) return;
+		//angle は自分の向き+90度
 		float angle = transform.eulerAngles.z + 90f;
 		GameObject Penetrate = Instantiate(extendEffectPrefab, position, Quaternion.Euler(0, 0, angle));
 		Penetrate.transform.parent = transform;
@@ -284,6 +307,8 @@ public class Player : MonoBehaviour
 		Instantiate(grappleHitEffectPrefab, position, Quaternion.identity);
 	}
 
+
+
 	void HandleSwing()
 	{
 		if (GrappleDamageCount > GrappleDamageInterval)
@@ -291,6 +316,8 @@ public class Player : MonoBehaviour
 			GrappleDamageCount -= GrappleDamageInterval;
 			Damage(GrappleDamageAmount);
 		}
+		GrappleDamageCount += Time.deltaTime;
+
 		GrappleDamageCount += Time.deltaTime;
 
 		Vector2 dir = (mousePos - (Vector2)transform.position).normalized;
@@ -301,7 +328,6 @@ public class Player : MonoBehaviour
 	{
 		if (grappleLoopSource != null && grappleLoopSource.isPlaying)
 			grappleLoopSource.Stop();
-
 		isExtending = false;
 		extendOnce = false;
 		isMaxExtended = false;
