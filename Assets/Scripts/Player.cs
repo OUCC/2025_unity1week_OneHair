@@ -87,6 +87,7 @@ public class Player : MonoBehaviour
 	[Header("Hair Fall Settings")]
 	[SerializeField] private float hairFallSpeed = 0.5f;
 	private bool isDead = false;
+	private Vector2 hairFallRoot;
 	private Vector2 hairFallTip;
 
 	// =====================
@@ -163,12 +164,12 @@ public class Player : MonoBehaviour
 			currentStrainFaceIndex = Random.Range(strainFaceMin, strainFaceMax + 1);
 		}
 
-		if (Keyboard.current.fKey.isPressed)
+		if (Keyboard.current.fKey.isPressed || Mouse.current.leftButton.isPressed)
 		{
 			if (kickCooldownTimer > 0) return;
 			if (!isGrappling) ProcessGrappleExtension();
 		}
-		else if (Keyboard.current.fKey.wasReleasedThisFrame)
+		else if (Keyboard.current.fKey.wasReleasedThisFrame || Mouse.current.leftButton.wasReleasedThisFrame)
 		{
 			if (isExtending || isGrappling) ResetGrapple();
 		}
@@ -402,7 +403,7 @@ public class Player : MonoBehaviour
 				isKickFlashing = false;
 		}
 
-		Vector2 root = GetRootPos();
+		Vector2 root = isDead ? hairFallRoot : GetRootPos();
 		Vector2 tip = isDead ? hairFallTip : (isGrappling ? grapplePoint : root + (Vector2)transform.up * currentLength);
 
 		hairRenderer.SetPosition(0, root);
@@ -411,7 +412,8 @@ public class Player : MonoBehaviour
 
 	void UpdateHairFall()
 	{
-		// 髪の毛を下に落としていく
+		// 髪の毛を下に落としていく（根本と先端の両方）
+		hairFallRoot.y -= hairFallSpeed * Time.deltaTime;
 		hairFallTip.y -= hairFallSpeed * Time.deltaTime;
 	}
 
@@ -447,7 +449,9 @@ public class Player : MonoBehaviour
 	void OnPlayerDeath()
 	{
 		isDead = true;
+		currentLength = 1f;
 		Vector2 root = GetRootPos();
+		hairFallRoot = root;
 		hairFallTip = root + (Vector2)transform.up * currentLength;
 		ForceStop();
 	}
