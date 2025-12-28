@@ -3,10 +3,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 public class Player : MonoBehaviour
 {
-	// =====================
-	// 設定
-	// =====================
-
 	[Header("Hair Specs")]
 	public float minLength = 0.5f;
 	public float maxLength = 2.0f;
@@ -14,6 +10,9 @@ public class Player : MonoBehaviour
 	public float rootOffset = 0.5f;
 
 	[Header("Kick")]
+
+	public KickTrigger kickTrigger;
+
 	public float kickRange = 1.2f;
 	public float kickForce = 20f;
 	public float kickUpperForce = 10f;
@@ -27,6 +26,7 @@ public class Player : MonoBehaviour
 
 	[Header("Grapple")]
 	public float swingForce = 20f;
+
 
 	[Header("Hair Color")]
 	[SerializeField] private Color currentHairColor = Color.black;
@@ -45,7 +45,6 @@ public class Player : MonoBehaviour
 	[SerializeField] private GameObject jumpEffectPrefab;
 	[SerializeField] private GameObject extendEffectPrefab;
 	[SerializeField] private GameObject grappleHitEffectPrefab;
-
 
 	// =====================
 	// 内部
@@ -85,10 +84,15 @@ public class Player : MonoBehaviour
 
 	private float GrappleDamageCount = 0f;
 
+	[Header("Hair Fall Settings")]
+	[SerializeField] private float hairFallSpeed = 0.5f;
+	private bool isDead = false;
+	private Vector2 hairFallRoot;
+	private Vector2 hairFallTip;
+
 	// =====================
 	// Unity
 	// =====================
-
 	void Start()
 	{
 		rb = GetComponent<Rigidbody2D>();
@@ -104,11 +108,9 @@ public class Player : MonoBehaviour
 
 	void Update()
 	{
-		bool isPlaying =
-			GameManager.Instance == null ||
-			GameManager.Instance.IsPlaying();
+		bool isPlaying = GameManager.Instance == null || GameManager.Instance.IsPlaying();
 
-		if (isPlaying)
+		if (isPlaying && !isDead)
 		{
 			if (Mouse.current == null || Keyboard.current == null) return;
 
@@ -118,9 +120,14 @@ public class Player : MonoBehaviour
 			HandleRotation();
 			HandleInput();
 		}
-		else
+		else if (!isPlaying)
 		{
 			ForceStop();
+		}
+
+		if (isDead)
+		{
+			UpdateHairFall();
 		}
 
 		UpdateVisuals();
@@ -128,9 +135,7 @@ public class Player : MonoBehaviour
 
 	void FixedUpdate()
 	{
-		if (GameManager.Instance != null && !GameManager.Instance.IsPlaying())
-			return;
-
+		if (GameManager.Instance != null && !GameManager.Instance.IsPlaying()) return;
 		if (isGrappling)
 			HandleSwing();
 	}
@@ -143,25 +148,28 @@ public class Player : MonoBehaviour
 			item.OnPickup(gameObject);
 		}
 	}
+
 	// =====================
 	// 入力
 	// =====================
-
 	void HandleInput()
 	{
 		if (Keyboard.current.spaceKey.wasPressedThisFrame)
+		{
 			TryKick();
+		}
 
 		if (Keyboard.current.fKey.wasPressedThisFrame)
+		{
 			currentStrainFaceIndex = Random.Range(strainFaceMin, strainFaceMax + 1);
+		}
 
-		if (Keyboard.current.fKey.isPressed)
+		if (Keyboard.current.fKey.isPressed || Mouse.current.leftButton.isPressed)
 		{
 			if (kickCooldownTimer > 0) return;
-			if (!isGrappling)
-				ProcessGrappleExtension();
+			if (!isGrappling) ProcessGrappleExtension();
 		}
-		else if (Keyboard.current.fKey.wasReleasedThisFrame)
+		else if (Keyboard.current.fKey.wasReleasedThisFrame || Mouse.current.leftButton.wasReleasedThisFrame)
 		{
 			if (isExtending || isGrappling) ResetGrapple();
 		}
@@ -170,7 +178,6 @@ public class Player : MonoBehaviour
 	// =====================
 	// キック（ジャンプ）
 	// =====================
-
 	void TryKick()
 	{
 		Debug.Log($"Kick pressed. cooldown={kickCooldownTimer}, sfx={(sfxSource != null)}, clip={(kickClip != null)}");
@@ -187,6 +194,8 @@ public class Player : MonoBehaviour
 
 		if (isGrappling)
 			ResetGrapple();
+
+		GameObject target = kickTrigger.GetAnyTarget();
 
 		Damage(kickDamageAmount);
 
@@ -209,10 +218,8 @@ public class Player : MonoBehaviour
 	void SpawnJumpEffect(Vector2 position, Vector2 direction)
 	{
 		if (jumpEffectPrefab == null) return;
-
 		float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-		//zに)90度足すことで、エフェクトが進行方向を向くようにする
-
+		// zに-90度足すことで、エフェクトが進行方向を向くようにする
 		angle -= 90f;
 		Instantiate(jumpEffectPrefab, position, Quaternion.Euler(0, 0, angle));
 	}
@@ -220,7 +227,6 @@ public class Player : MonoBehaviour
 	// =====================
 	// グラップル
 	// =====================
-
 	void ProcessGrappleExtension()
 	{
 		isExtending = true;
@@ -237,7 +243,17 @@ public class Player : MonoBehaviour
 			}
 		}
 
-		if (!extendOnce) { extendOnce = true; SpawnExtendEffect(GetRootPos()); }
+		if (!extendOnce)
+		{
+			float speed = (maxLength - minLength) / Mathf.Max(extendDuration, 0.001f);
+			currentLength += speed * Time.deltaTime;
+
+			if (currentLength >= maxLength)
+			{
+				currentLength = maxLength;
+				isMaxExtended = true;
+			}
+		}
 
 		Vector2 root = GetRootPos();
 		Vector2 dir = transform.up;
@@ -256,7 +272,8 @@ public class Player : MonoBehaviour
 		if (extendEffectPrefab == null) return;
 		//angle は自分の向き+90度
 		float angle = transform.eulerAngles.z + 90f;
-		Instantiate(extendEffectPrefab, position, Quaternion.Euler(0, 0, angle));
+		GameObject Penetrate = Instantiate(extendEffectPrefab, position, Quaternion.Euler(0, 0, angle));
+		Penetrate.transform.parent = transform;
 	}
 
 	void StartGrapple(Vector2 point, GameObject hitObject)
@@ -285,11 +302,11 @@ public class Player : MonoBehaviour
 		joint.maxDistanceOnly = true;
 		joint.distance = Vector2.Distance(transform.position, point);
 		joint.enableCollision = true;
+
 		if (grappleLoopSource != null && grappleLoopClip != null)
 		{
 			if (grappleLoopSource.clip != grappleLoopClip)
 				grappleLoopSource.clip = grappleLoopClip;
-
 			if (!grappleLoopSource.isPlaying)
 				grappleLoopSource.Play();
 		}
@@ -301,6 +318,8 @@ public class Player : MonoBehaviour
 		Instantiate(grappleHitEffectPrefab, position, Quaternion.identity);
 	}
 
+
+
 	void HandleSwing()
 	{
 		if (GrappleDamageCount > GrappleDamageInterval)
@@ -308,6 +327,7 @@ public class Player : MonoBehaviour
 			GrappleDamageCount -= GrappleDamageInterval;
 			Damage(GrappleDamageAmount);
 		}
+		GrappleDamageCount += Time.deltaTime;
 
 		GrappleDamageCount += Time.deltaTime;
 
@@ -335,24 +355,20 @@ public class Player : MonoBehaviour
 
 	void ForceStop()
 	{
-
 		ResetGrapple();
 		if (grappleLoopSource != null && grappleLoopSource.isPlaying)
 		{
 			grappleLoopSource.Stop();
 		}
-
 		isKickFlashing = false;
 		currentStrainFaceIndex = -1;
 		currentKickFaceIndex = -1;
-
 		rb.linearVelocity = Vector2.zero;
 	}
 
 	// =====================
 	// 補助
 	// =====================
-
 	void HandleRotation()
 	{
 		mousePos = mainCam.ScreenToWorldPoint(Mouse.current.position.ReadValue());
@@ -369,10 +385,9 @@ public class Player : MonoBehaviour
 
 	void UpdateVisuals()
 	{
-		if (faceAnimator != null)
+		if (faceAnimator != null && !isDead)
 		{
 			int targetFace = -1;
-
 			if (isKickFlashing)
 				targetFace = currentKickFaceIndex;
 			else if (isExtending || isGrappling)
@@ -388,18 +403,19 @@ public class Player : MonoBehaviour
 				isKickFlashing = false;
 		}
 
-		Vector2 root = GetRootPos();
-		Vector2 tip =
-			isGrappling ? grapplePoint :
-			root + (Vector2)transform.up * currentLength;
+		Vector2 root = isDead ? hairFallRoot : GetRootPos();
+		Vector2 tip = isDead ? hairFallTip : (isGrappling ? grapplePoint : root + (Vector2)transform.up * currentLength);
 
 		hairRenderer.SetPosition(0, root);
 		hairRenderer.SetPosition(1, tip);
 	}
 
-	// =====================
-	// HP
-	// =====================
+	void UpdateHairFall()
+	{
+		// 髪の毛を下に落としていく（根本と先端の両方）
+		hairFallRoot.y -= hairFallSpeed * Time.deltaTime;
+		hairFallTip.y -= hairFallSpeed * Time.deltaTime;
+	}
 
 	void ApplyHairColor()
 	{
@@ -413,7 +429,9 @@ public class Player : MonoBehaviour
 		hpSlider.value = currentHP;
 
 		if (currentHP <= 0)
+		{
 			GameManager.Instance.GameOver();
+		}
 	}
 
 	public void Damage(float amount)
@@ -421,6 +439,21 @@ public class Player : MonoBehaviour
 		if (amount <= 0) return;
 		currentHP = Mathf.Max(0, currentHP - amount);
 		UpdateHP();
+
+		if (currentHP <= 0 && !isDead)
+		{
+			OnPlayerDeath();
+		}
+	}
+
+	void OnPlayerDeath()
+	{
+		isDead = true;
+		currentLength = 1f;
+		Vector2 root = GetRootPos();
+		hairFallRoot = root;
+		hairFallTip = root + (Vector2)transform.up * currentLength;
+		ForceStop();
 	}
 
 	public void Heal(float amount)
