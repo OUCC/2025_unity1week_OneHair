@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.InputSystem;
-
+using unityroom.Api;
 public class GameManager : MonoBehaviour
 {
 	public static GameManager Instance;
@@ -28,11 +28,12 @@ public class GameManager : MonoBehaviour
 	[SerializeField] private TextMeshProUGUI timeText;
 	[SerializeField] private TextMeshProUGUI scoreText;
 	[SerializeField] private TextMeshProUGUI heightText;
+	[SerializeField] private Player player; 
 
 	[SerializeField] private float heightOffset = 0f;
 
 	private Transform playerTransform;
-
+	
 	private void Awake()
 	{
 		// シーン内限定シングルトン
@@ -73,6 +74,8 @@ public class GameManager : MonoBehaviour
 
 		if (scoreText != null)
 			scoreText.text = "スコア：" + score + "m";
+		score += (int)player.currentHP;
+		UnityroomApiClient.Instance.SendScore(1, score, ScoreboardWriteMode.HighScoreDesc);
 	}
 
 	void FindPlayer()
