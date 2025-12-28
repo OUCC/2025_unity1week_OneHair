@@ -776,7 +776,7 @@ MonoBehaviour:
   kickFaceMax: 7
   GrappleDamageAmount: 1
   GrappleDamageInterval: 0.5
-  GrappleDamageCount: 0
+  grappleOffDamage: 10
   kickDamageAmount: 5
 --- !u!50 &541550210
 Rigidbody2D:

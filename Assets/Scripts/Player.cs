@@ -76,8 +76,12 @@ public class Player : MonoBehaviour
     private float GrappleDamageAmount = 1.0f;
     [SerializeField]
     private float GrappleDamageInterval = 0.5f;
-    [SerializeField]
+
     private float GrappleDamageCount = 0f;
+
+    [SerializeField] 
+    private float grappleOffDamage = 10f;
+
     [SerializeField]
     private float kickDamageAmount = 5f;
 
@@ -144,7 +148,7 @@ public class Player : MonoBehaviour
 			if (!isGrappling)
 				ProcessGrappleExtension();
 		}
-		else
+		else if (Keyboard.current.fKey.wasReleasedThisFrame)
 		{
 			ResetGrapple();
 		}
@@ -264,6 +268,7 @@ public class Player : MonoBehaviour
 		isExtending = false;
 		isMaxExtended = false;
 		currentLength = minLength;
+        Damage(grappleOffDamage);
 
 		if (joint != null)
 			Destroy(joint);
