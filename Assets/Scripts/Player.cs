@@ -16,6 +16,7 @@ public class Player : MonoBehaviour
 	[Header("Kick")]
 	public float kickRange = 1.2f;
 	public float kickForce = 20f;
+	public float kickUpperForce = 10f;
 	public float kickCooldown = 1.0f;
 	public float kickFlashTime = 0.1f;
 
@@ -134,19 +135,19 @@ public class Player : MonoBehaviour
 			HandleSwing();
 	}
 
-    void OnTriggerEnter2D(Collider2D collision)
-    {
-        IItem item = collision.GetComponent<IItem>();
-        if (item != null)
-        {
-            item.OnPickup(gameObject);
-        }
-    }
-    // =====================
-    // 入力
-    // =====================
+	void OnTriggerEnter2D(Collider2D collision)
+	{
+		IItem item = collision.GetComponent<IItem>();
+		if (item != null)
+		{
+			item.OnPickup(gameObject);
+		}
+	}
+	// =====================
+	// 入力
+	// =====================
 
-    void HandleInput()
+	void HandleInput()
 	{
 		if (Keyboard.current.spaceKey.wasPressedThisFrame)
 			TryKick();
@@ -190,7 +191,7 @@ public class Player : MonoBehaviour
 		Damage(kickDamageAmount);
 
 		rb.linearVelocity = Vector2.zero;
-		rb.AddForce(-dir * kickForce, ForceMode2D.Impulse);
+		rb.AddForce(-dir * kickForce + Vector2.up * kickUpperForce, ForceMode2D.Impulse);
 		if (sfxSource != null && kickClip != null)
 		{
 			sfxSource.PlayOneShot(kickClip);
