@@ -20,10 +20,10 @@ public class Player : MonoBehaviour
 	public float kickCooldown = 1.0f;
 	public float kickFlashTime = 0.1f;
 
-    [Header("HP Settings")]
-    public Slider hpSlider;
-    public float maxHP = 100f;
-    public float currentHP = 100f;
+	[Header("HP Settings")]
+	public Slider hpSlider;
+	public float maxHP = 100f;
+	public float currentHP = 100f;
 
 	[Header("Grapple")]
 	public float swingForce = 20f;
@@ -41,6 +41,12 @@ public class Player : MonoBehaviour
 	public int kickFaceMin = 3;
 	public int kickFaceMax = 4;
 
+	[Header("Effects")]
+	[SerializeField] private GameObject jumpEffectPrefab;
+	[SerializeField] private GameObject extendEffectPrefab;
+	[SerializeField] private GameObject grappleHitEffectPrefab;
+
+
 	// =====================
 	// 内部
 	// =====================
@@ -54,6 +60,7 @@ public class Player : MonoBehaviour
 	private bool isMaxExtended;
 	private bool isGrappling;
 
+	private bool extendOnce = false;
 	private float kickCooldownTimer;
 	private float kickFlashTimer;
 	private bool isKickFlashing;
@@ -69,21 +76,14 @@ public class Player : MonoBehaviour
 	public AudioClip kickClip;
 	public AudioClip grappleLoopClip;
 
-    [Header("HP Regeneration and Damage Settings")]
-    [SerializeField]
-    private float GrappleDamageAmount = 1.0f;
-    [SerializeField]
-    private float GrappleDamageInterval = 0.5f;
 
-    private float GrappleDamageCount = 0f;
+	[Header("Damage Settings")]
+	[SerializeField] private float GrappleDamageAmount = 1.0f;
+	[SerializeField] private float GrappleDamageInterval = 0.5f;
+	[SerializeField] private float grappleOffDamage = 10f;
+	[SerializeField] private float kickDamageAmount = 5f;
 
-    [SerializeField] 
-    private float grappleOffDamage = 10f;
-
-    [SerializeField]
-    private float kickDamageAmount = 5f;
-
-    private bool isDead = false;
+	private float GrappleDamageCount = 0f;
 
 	// =====================
 	// Unity
@@ -98,8 +98,7 @@ public class Player : MonoBehaviour
 		hairRenderer.useWorldSpace = true;
 
 		currentLength = minLength;
-
-        updateHP();
+		UpdateHP();
 		ApplyHairColor();
 	}
 
@@ -109,7 +108,6 @@ public class Player : MonoBehaviour
 			GameManager.Instance == null ||
 			GameManager.Instance.IsPlaying();
 
-		// --- 操作系は Playing のみ ---
 		if (isPlaying)
 		{
 			if (Mouse.current == null || Keyboard.current == null) return;
@@ -122,11 +120,9 @@ public class Player : MonoBehaviour
 		}
 		else
 		{
-			// 操作不能時は物理・入力を止めるだけ
 			ForceStop();
 		}
 
-		// --- 描画更新は常に行う ---
 		UpdateVisuals();
 	}
 
@@ -137,32 +133,6 @@ public class Player : MonoBehaviour
 
 		if (isGrappling)
 			HandleSwing();
-	}
-
-    void OnTriggerEnter2D(Collider2D collision)
-    {
-        IItem item = collision.gameObject.GetComponent<IItem>();
-        if (item != null && GameManager.Instance != null && GameManager.Instance.IsPlaying())
-        {
-            item.OnPickup(gameObject);
-        }
-    }
-
-    // =====================
-    // 外部公開：色変更
-    // =====================
-
-    public void SetHairColor(Color color)
-	{
-		currentHairColor = color;
-		ApplyHairColor();
-	}
-
-	void ApplyHairColor()
-	{
-		if (hairRenderer == null) return;
-		hairRenderer.startColor = currentHairColor;
-		hairRenderer.endColor = currentHairColor;
 	}
 
 	// =====================
@@ -190,7 +160,7 @@ public class Player : MonoBehaviour
 	}
 
 	// =====================
-	// キック
+	// キック（ジャンプ）
 	// =====================
 
 	void TryKick()
@@ -209,10 +179,8 @@ public class Player : MonoBehaviour
 		if (hit.collider == null || hit.collider.gameObject == gameObject)
 			return;
 
-        // キックダメージ
-        Damage(kickDamageAmount);
+		Damage(kickDamageAmount);
 
-		// 反動ジャンプ
 		rb.linearVelocity = Vector2.zero;
 		rb.AddForce(-dir * kickForce, ForceMode2D.Impulse);
 		if (sfxSource != null && kickClip != null)
@@ -221,11 +189,23 @@ public class Player : MonoBehaviour
 		}
 
 
-		currentKickFaceIndex = Random.Range(kickFaceMin, kickFaceMax + 1);
+		SpawnJumpEffect(root, -dir);
 
+		currentKickFaceIndex = Random.Range(kickFaceMin, kickFaceMax + 1);
 		isKickFlashing = true;
 		kickFlashTimer = kickFlashTime;
 		kickCooldownTimer = kickCooldown;
+	}
+
+	void SpawnJumpEffect(Vector2 position, Vector2 direction)
+	{
+		if (jumpEffectPrefab == null) return;
+
+		float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+		//zに)90度足すことで、エフェクトが進行方向を向くようにする
+
+		angle -= 90f;
+		Instantiate(jumpEffectPrefab, position, Quaternion.Euler(0, 0, angle));
 	}
 
 	// =====================
@@ -248,6 +228,8 @@ public class Player : MonoBehaviour
 			}
 		}
 
+		if (!extendOnce) { extendOnce = true; SpawnExtendEffect(GetRootPos()); }
+
 		Vector2 root = GetRootPos();
 		Vector2 dir = transform.up;
 
@@ -260,11 +242,21 @@ public class Player : MonoBehaviour
 			StartGrapple(hit.point, hit.collider.gameObject);
 	}
 
+	void SpawnExtendEffect(Vector2 position)
+	{
+		if (extendEffectPrefab == null) return;
+		//angle は自分の向き+90度
+		float angle = transform.eulerAngles.z + 90f;
+		Instantiate(extendEffectPrefab, position, Quaternion.Euler(0, 0, angle));
+	}
+
 	void StartGrapple(Vector2 point, GameObject hitObject)
 	{
 		isGrappling = true;
 		isExtending = false;
 		grapplePoint = point;
+
+		SpawnGrappleHitEffect(point);
 
 		joint = gameObject.AddComponent<DistanceJoint2D>();
 		joint.autoConfigureConnectedAnchor = false;
@@ -294,17 +286,21 @@ public class Player : MonoBehaviour
 		}
 	}
 
+	void SpawnGrappleHitEffect(Vector2 position)
+	{
+		if (grappleHitEffectPrefab == null) return;
+		Instantiate(grappleHitEffectPrefab, position, Quaternion.identity);
+	}
+
 	void HandleSwing()
 	{
-        //継続ダメージ
-        if (GrappleDamageCount > GrappleDamageInterval)
-        {
-            GrappleDamageCount -= GrappleDamageInterval;
-            Damage(GrappleDamageAmount);
-        }
+		if (GrappleDamageCount > GrappleDamageInterval)
+		{
+			GrappleDamageCount -= GrappleDamageInterval;
+			Damage(GrappleDamageAmount);
+		}
 
-        //継続ダメージ用カウントアップ
-        GrappleDamageCount += Time.deltaTime;
+		GrappleDamageCount += Time.deltaTime;
 
 		Vector2 dir = (mousePos - (Vector2)transform.position).normalized;
 		rb.AddForce(dir * swingForce);
@@ -315,18 +311,17 @@ public class Player : MonoBehaviour
 		if (grappleLoopSource != null && grappleLoopSource.isPlaying)
     		grappleLoopSource.Stop();
 		isExtending = false;
+		extendOnce = false;
 		isMaxExtended = false;
 		currentLength = minLength;
-        Damage(grappleOffDamage);
-        Debug.Log("Grapple Off Damage: " + grappleOffDamage);
+
+		Damage(grappleOffDamage);
 
 		foreach (var j in GetComponents<DistanceJoint2D>())
 			Destroy(j);
 
 		isGrappling = false;
-
-        //継続ダメージのカウントをリセット
-        GrappleDamageCount = 0f;
+		GrappleDamageCount = 0f;
 	}
 
 	void ForceStop()
@@ -342,8 +337,7 @@ public class Player : MonoBehaviour
 		currentStrainFaceIndex = -1;
 		currentKickFaceIndex = -1;
 
-		if (rb != null)
-			rb.linearVelocity = Vector2.zero;
+		rb.linearVelocity = Vector2.zero;
 	}
 
 	// =====================
@@ -364,10 +358,6 @@ public class Player : MonoBehaviour
 		return (Vector2)transform.position + (Vector2)transform.up * rootOffset;
 	}
 
-	// =====================
-	// 表示
-	// =====================
-
 	void UpdateVisuals()
 	{
 		if (faceAnimator != null)
@@ -382,8 +372,6 @@ public class Player : MonoBehaviour
 			faceAnimator.SetInteger("Face", targetFace);
 		}
 
-		Vector2 root = GetRootPos();
-
 		if (isKickFlashing)
 		{
 			kickFlashTimer -= Time.deltaTime;
@@ -391,6 +379,7 @@ public class Player : MonoBehaviour
 				isKickFlashing = false;
 		}
 
+		Vector2 root = GetRootPos();
 		Vector2 tip =
 			isGrappling ? grapplePoint :
 			root + (Vector2)transform.up * currentLength;
@@ -399,57 +388,36 @@ public class Player : MonoBehaviour
 		hairRenderer.SetPosition(1, tip);
 	}
 
-	void SetColor(Color c)
+	// =====================
+	// HP
+	// =====================
+
+	void ApplyHairColor()
 	{
-		hairRenderer.startColor = c;
-		hairRenderer.endColor = c;
+		hairRenderer.startColor = currentHairColor;
+		hairRenderer.endColor = currentHairColor;
 	}
 
-    private void updateHP()
-    {
-        hpSlider.maxValue = maxHP;
-        hpSlider.value = currentHP;
+	void UpdateHP()
+	{
+		hpSlider.maxValue = maxHP;
+		hpSlider.value = currentHP;
 
-        if (currentHP <= 0)
-        {
-            //ゲームオーバー
-            GameManager.Instance.GameOver();
-        }
+		if (currentHP <= 0)
+			GameManager.Instance.GameOver();
+	}
 
-        Debug.Log("update HP");
-    }
+	public void Damage(float amount)
+	{
+		if (amount <= 0) return;
+		currentHP = Mathf.Max(0, currentHP - amount);
+		UpdateHP();
+	}
 
-    public void Damage(float amount)
-    {
-        if (amount <= 0) 
-        {
-            return;
-        }
-
-        currentHP -= amount;
-
-        if (currentHP <= 0) 
-        {
-            currentHP = 0;
-        }
-
-        updateHP();
-    }
-
-    public void Heal(float amount)
-    {
-        if (amount <= 0) 
-        {
-            return;
-        }
-
-        currentHP += amount;
-
-        if (currentHP >= maxHP) 
-        {
-            currentHP = maxHP;
-        }
-
-        updateHP();
-    }
+	public void Heal(float amount)
+	{
+		if (amount <= 0) return;
+		currentHP = Mathf.Min(maxHP, currentHP + amount);
+		UpdateHP();
+	}
 }
