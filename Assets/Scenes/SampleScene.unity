@@ -953,6 +953,8 @@ MonoBehaviour:
   rootOffset: 0.5
   kickTrigger: {fileID: 1848119500}
   kickRange: 0.6
+  segmentCount: 5
+  segmentWaviness: 0.3
   kickForce: 5
   kickUpperForce: 3
   kickCooldown: 0.1
