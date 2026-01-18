@@ -14,6 +14,8 @@ public class Player : MonoBehaviour
 	public KickTrigger kickTrigger;
 
 	public float kickRange = 1.2f;
+	public int segmentCount = 5;
+	public float segmentWaviness = 0.3f;
 	public float kickForce = 20f;
 	public float kickUpperForce = 10f;
 	public float kickCooldown = 1.0f;
@@ -90,9 +92,9 @@ public class Player : MonoBehaviour
 	private Vector2 hairFallRoot;
 	private Vector2 hairFallTip;
 
-	// =====================
-	// Unity
-	// =====================
+	[Header("Physics Limits")]
+	[SerializeField] private float maxLinearSpeed = 15f;
+
 	void Start()
 	{
 		rb = GetComponent<Rigidbody2D>();
@@ -138,6 +140,8 @@ public class Player : MonoBehaviour
 		if (GameManager.Instance != null && !GameManager.Instance.IsPlaying()) return;
 		if (isGrappling)
 			HandleSwing();
+
+		ClampLinearSpeed();
 	}
 
 	void OnTriggerEnter2D(Collider2D collision)
@@ -180,16 +184,14 @@ public class Player : MonoBehaviour
 	// =====================
 	void TryKick()
 	{
-		Debug.Log($"Kick pressed. cooldown={kickCooldownTimer}, sfx={(sfxSource != null)}, clip={(kickClip != null)}");
-		if (kickCooldownTimer > 0) return;
+		//if (kickCooldownTimer > 0) return;
 
 
 		Vector2 root = GetRootPos();
 		Vector2 dir = transform.up;
 
-		RaycastHit2D hit = Physics2D.Raycast(root, dir, kickRange);
 
-		if (hit.collider == null || hit.collider.gameObject == gameObject)
+		if (!kickTrigger.HasTarget)
 			return;
 
 		if (isGrappling)
@@ -404,10 +406,67 @@ public class Player : MonoBehaviour
 		}
 
 		Vector2 root = isDead ? hairFallRoot : GetRootPos();
-		Vector2 tip = isDead ? hairFallTip : (isGrappling ? grapplePoint : root + (Vector2)transform.up * currentLength);
+		Vector2 defaultTip = root + (Vector2)transform.up * currentLength;
 
-		hairRenderer.SetPosition(0, root);
-		hairRenderer.SetPosition(1, tip);
+		// グラップル時は最優先で2点描画（他状態より優先）
+		if (isGrappling && !isDead)
+		{
+			hairRenderer.positionCount = 2;
+			hairRenderer.SetPosition(0, root);
+			hairRenderer.SetPosition(1, grapplePoint);
+			return;
+		}
+
+		// 死亡時は落下中の根本/先端をそのまま描画
+		if (isDead)
+		{
+			hairRenderer.positionCount = 2;
+			hairRenderer.SetPosition(0, hairFallRoot);
+			hairRenderer.SetPosition(1, hairFallTip);
+			return;
+		}
+
+		if (kickTrigger != null && kickTrigger.HasTarget)
+		{
+			float shortenedLength = currentLength * 0.3f;
+			DrawWavyHair(root, transform.up, shortenedLength);
+		}
+		else
+		{
+			hairRenderer.positionCount = 2;
+			hairRenderer.SetPosition(0, root);
+			hairRenderer.SetPosition(1, defaultTip);
+		}
+	}
+
+	void DrawWavyHair(Vector2 root, Vector2 direction, float length)
+	{
+		// セグメント数に応じて節のある髪の毛を描画
+		int positionCount = segmentCount * 2 + 1;
+		hairRenderer.positionCount = positionCount;
+
+		//directionから右90度のベクトル
+		Vector2 secondaryAngle = new Vector2(-direction.y, direction.x);
+		Vector2 currentPos = root + secondaryAngle * -0.2f;
+		float segmentLength = length * 2 / segmentCount;
+
+		hairRenderer.SetPosition(0, currentPos);
+
+		for (int i = 0; i < segmentCount; i++)
+		{
+			// ギザギザ効果のため、左右に振動させる
+			float waveOffset = i % 2 == 0 ? segmentWaviness : -segmentWaviness;
+			Vector2 perpendicular = new Vector2(-direction.y, direction.x);
+			Vector2 wavePos = currentPos + direction * segmentLength + perpendicular * waveOffset;
+
+			hairRenderer.SetPosition(i * 2 + 1, wavePos);
+			currentPos = wavePos;
+
+			// 次のセグメントの開始点
+			Vector2 nextPos = currentPos + direction * segmentLength * 0.1f;
+			hairRenderer.SetPosition(i * 2 + 2, nextPos);
+			currentPos = nextPos;
+		}
 	}
 
 	void UpdateHairFall()
@@ -415,6 +474,17 @@ public class Player : MonoBehaviour
 		// 髪の毛を下に落としていく（根本と先端の両方）
 		hairFallRoot.y -= hairFallSpeed * Time.deltaTime;
 		hairFallTip.y -= hairFallSpeed * Time.deltaTime;
+	}
+
+	void ClampLinearSpeed()
+	{
+		float max = Mathf.Max(0f, maxLinearSpeed);
+		if (max <= 0f) return;
+		Vector2 v = rb.linearVelocity;
+		if (v.sqrMagnitude > max * max)
+		{
+			rb.linearVelocity = v.normalized * max;
+		}
 	}
 
 	void ApplyHairColor()

@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
 	public int score;
 
 	[Header("Height Score")]
+	public float playerHeight;
 	public float maxHeight;
 
 	[Header("UI")]
@@ -58,6 +59,7 @@ public class GameManager : MonoBehaviour
 		if (playerTransform != null)
 		{
 			float currentHeight = playerTransform.position.y + heightOffset;
+			playerHeight = currentHeight;
 			score = Mathf.FloorToInt(currentHeight);
 			if (currentHeight < -5.0f)
 			{
