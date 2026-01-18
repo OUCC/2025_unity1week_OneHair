@@ -173,6 +173,10 @@ public class Player : MonoBehaviour
 		{
 			if (isExtending || isGrappling) ResetGrapple();
 		}
+		if (Keyboard.current.rKey.wasPressedThisFrame)
+		{
+			Respawn();
+		}
 	}
 
 	// =====================
@@ -461,5 +465,27 @@ public class Player : MonoBehaviour
 		if (amount <= 0) return;
 		currentHP = Mathf.Min(maxHP, currentHP + amount);
 		UpdateHP();
+	}
+	public void Respawn()
+	{
+		// チェックポイント座標（未設定なら今の位置のままでもOKだが、ここでは保険で現在地）
+		Vector3 pos = transform.position;
+
+		if (GameManager.Instance != null)
+		{
+			pos = GameManager.Instance.CheckPointPos; // GameManager側にある前提
+		}
+
+		// 物理を使ってるなら rb.position 推奨（瞬間移動でも挙動が安定）
+		if (rb != null)
+		{
+			rb.linearVelocity = Vector2.zero; // 速度も止めたいなら（不要なら消してOK）
+			rb.angularVelocity = 0f;
+			rb.position = pos;
+		}
+		else
+		{
+			transform.position = pos;
+		}
 	}
 }

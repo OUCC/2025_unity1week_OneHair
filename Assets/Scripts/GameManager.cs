@@ -5,6 +5,7 @@ using unityroom.Api;
 public class GameManager : MonoBehaviour
 {
 	public static GameManager Instance;
+	public Vector2 CheckPointPos;
 
 	public enum GameState
 	{
