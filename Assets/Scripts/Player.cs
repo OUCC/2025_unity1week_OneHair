@@ -1,6 +1,9 @@
+using System;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 public class Player : MonoBehaviour
 {
 	[Header("Hair Specs")]
@@ -46,6 +49,10 @@ public class Player : MonoBehaviour
 	[SerializeField] private GameObject extendEffectPrefab;
 	[SerializeField] private GameObject grappleHitEffectPrefab;
 
+    [Header("Auto Heal Settings")]
+    [SerializeField] private float autoHealAmount = 1.0f;
+    [SerializeField] private float autoHealInterval = 0.03f;
+
 	// =====================
 	// 内部
 	// =====================
@@ -90,6 +97,8 @@ public class Player : MonoBehaviour
 	private Vector2 hairFallRoot;
 	private Vector2 hairFallTip;
 
+    private CancellationTokenSource autoHealCts;
+
 	// =====================
 	// Unity
 	// =====================
@@ -101,9 +110,15 @@ public class Player : MonoBehaviour
 		hairRenderer.positionCount = 2;
 		hairRenderer.useWorldSpace = true;
 
+        //HP初期化
 		currentLength = minLength;
 		UpdateHP();
+
 		ApplyHairColor();
+
+        // 自動回復開始
+        autoHealCts = new CancellationTokenSource();
+        AutoHealLoop(autoHealCts.Token).Forget();
 	}
 
 	void Update()
@@ -149,6 +164,15 @@ public class Player : MonoBehaviour
 		}
 	}
 
+    private void OnDestroy()
+    {
+        if (autoHealCts != null)
+        {
+            autoHealCts.Cancel();
+            autoHealCts.Dispose();
+        }
+    }
+
 	// =====================
 	// 入力
 	// =====================
@@ -161,7 +185,7 @@ public class Player : MonoBehaviour
 
 		if (Keyboard.current.fKey.wasPressedThisFrame)
 		{
-			currentStrainFaceIndex = Random.Range(strainFaceMin, strainFaceMax + 1);
+			currentStrainFaceIndex = UnityEngine.Random.Range(strainFaceMin, strainFaceMax + 1);
 		}
 
 		if (Keyboard.current.fKey.isPressed || Mouse.current.leftButton.isPressed)
@@ -209,7 +233,7 @@ public class Player : MonoBehaviour
 
 		SpawnJumpEffect(root, -dir);
 
-		currentKickFaceIndex = Random.Range(kickFaceMin, kickFaceMax + 1);
+		currentKickFaceIndex = UnityEngine.Random.Range(kickFaceMin, kickFaceMax + 1);
 		isKickFlashing = true;
 		kickFlashTimer = kickFlashTime;
 		kickCooldownTimer = kickCooldown;
@@ -310,6 +334,12 @@ public class Player : MonoBehaviour
 			if (!grappleLoopSource.isPlaying)
 				grappleLoopSource.Play();
 		}
+
+        //回復を中止
+        if (autoHealCts != null)
+        {
+            autoHealCts.Cancel();
+        }
 	}
 
 	void SpawnGrappleHitEffect(Vector2 position)
@@ -344,6 +374,7 @@ public class Player : MonoBehaviour
 		isMaxExtended = false;
 		currentLength = minLength;
 
+        // グラップル解除時にダメージを与える
 		Damage(grappleOffDamage);
 
 		foreach (var j in GetComponents<DistanceJoint2D>())
@@ -351,6 +382,10 @@ public class Player : MonoBehaviour
 
 		isGrappling = false;
 		GrappleDamageCount = 0f;
+
+        // 自動回復を再開
+        autoHealCts = new CancellationTokenSource();
+        AutoHealLoop(autoHealCts.Token).Forget();
 	}
 
 	void ForceStop()
@@ -454,6 +489,12 @@ public class Player : MonoBehaviour
 		hairFallRoot = root;
 		hairFallTip = root + (Vector2)transform.up * currentLength;
 		ForceStop();
+
+        // 回復を中止
+        if (autoHealCts != null)
+        {
+            autoHealCts.Cancel();
+        }
 	}
 
 	public void Heal(float amount)
@@ -462,4 +503,23 @@ public class Player : MonoBehaviour
 		currentHP = Mathf.Min(maxHP, currentHP + amount);
 		UpdateHP();
 	}
+
+    private async UniTaskVoid AutoHealLoop(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (!isDead && currentHP < maxHP && !isGrappling)
+                {
+                    Heal(autoHealAmount);
+                }
+                await UniTask.Delay(TimeSpan.FromSeconds(autoHealInterval), cancellationToken: cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // キャンセルは無視
+        }
+    }
 }

@@ -971,11 +971,13 @@ MonoBehaviour:
   jumpEffectPrefab: {fileID: 7886521424314198419, guid: 9e8021b92bc47422a9b256b57bf1ad9c, type: 3}
   extendEffectPrefab: {fileID: 7886521424314198419, guid: ff98fd8d8f04e46b08d15f06602a1bbc, type: 3}
   grappleHitEffectPrefab: {fileID: 7886521424314198419, guid: 65452a0a795cd4f2fb8e1a053a994112, type: 3}
+  autoHealAmount: 1
+  autoHealInterval: 0.04
   sfxSource: {fileID: 541550214}
   grappleLoopSource: {fileID: 541550215}
   kickClip: {fileID: 8300000, guid: dc36638025783d146ae384330a61936a, type: 3}
   grappleLoopClip: {fileID: 8300000, guid: 38595eef7c8ba0240b79aa4dd4678540, type: 3}
-  GrappleDamageAmount: 1
+  GrappleDamageAmount: 5
   GrappleDamageInterval: 0.5
   grappleOffDamage: 10
   kickDamageAmount: 5
