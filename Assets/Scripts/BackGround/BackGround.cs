@@ -1,53 +1,40 @@
 using UnityEngine;
 using System.Collections.Generic;
 using ScreenPocket;
-// using ScreenPocket; // GameManagerのnamespaceがあれば有効化
 
-// =========================================================
-// 1. 設定用 Enum と クラス定義
-// =========================================================
-
-/// <summary>
-/// 背景の動きの種類
-/// </summary>
 public enum BackgroundType
 {
 	RangeSpawn,     // Type1: 特定の高さでのみ生成
-	HorizontalLoop  // Type2: 横方向にループ移動
+	HorizontalLoop  // Type2: 横ループ移動
 }
 
-/// <summary>
-/// 個別の背景オブジェクト設定
-/// [System.Serializable] をつけることで、
-/// BackGroundコンポーネントのインスペクター上でリストとして扱えるようになります。
-/// </summary>
 [System.Serializable]
 public class BackgroundObject
 {
 	[Header("General Settings")]
-	public string name = "New Background"; // 管理しやすいように名前をつける
 	public BackgroundType type;
 	public GameObject prefab;
-	public float targetHeight; // 生成基準の高さ
+	public float targetHeight; // 生成基準の高さ（ゲーム内メートル）
 
-	[Header("Type 1: Range Settings (区間生成用)")]
-	public float offsetX;
-	public float rangeThreshold = 6f; // 生成判定の範囲
+	// ★ 変更点: rangeThreshold を削除しました
+	// public float rangeThreshold = 6f; 
 
-	[Header("Type 2: Loop Settings (横ループ用)")]
-	public float scrollSpeedX = 30f;
+	[Header("Parallax Settings")]
+	[Tooltip("画面高さに対する移動倍率。1.0なら通常の追従。0.5なら遠景としてゆっくり動く")]
+	public float scrollScale = 1.0f;
 
-	// 内部変数（生成した実体などを保持）
+	[Header("Type 1: Position Settings")]
+	public float ratioX;
+
+	// 内部変数
 	private GameObject activeInstance;
 	private List<GameObject> loopInstances;
 	private bool isInitializedLoop = false;
 
-	/// <summary>
-	/// 更新処理（BackGroundクラスから毎フレーム呼ばれる）
-	/// </summary>
-	public void Update(Transform parent, Transform camera, float playerHeight)
+	// Update引数でCameraを受け取るようにします
+	public void Update(Transform parent, Camera camera, float playerHeight)
 	{
-		if (prefab == null) return;
+		if (prefab == null || camera == null) return;
 
 		switch (type)
 		{
@@ -55,161 +42,264 @@ public class BackgroundObject
 				UpdateRangeSpawn(parent, camera, playerHeight);
 				break;
 			case BackgroundType.HorizontalLoop:
-				UpdateHorizontalLoop(parent, camera, playerHeight); // 引数追加
+				UpdateHorizontalLoop(parent, camera, playerHeight);
 				break;
 		}
 	}
 
-	// --- Type 1: 区間生成ロジック ---
-	private void UpdateRangeSpawn(Transform parent, Transform camera, float currentHeight)
-	{
-		// 範囲内かどうかの判定
-		bool inRange = (currentHeight >= targetHeight - rangeThreshold && currentHeight <= targetHeight + rangeThreshold);
+	// --- 共通計算ロジック ---
 
-		if (inRange)
+	// ★ 変更点: カメラのサイズを基に、ワールド座標(m)をスクリーン座標(px)に変換します
+	private float CalculateScreenY(float currentHeight, Camera camera)
+	{
+		// 1. プレイヤーとオブジェクトの距離（メートル）
+		float heightDiff = targetHeight - currentHeight;
+
+		// 2. カメラのOrthographicSize(画面の縦半分メートル)から、1メートルあたりのピクセル数を計算
+		//    WorldHeight = size * 2
+		float worldScreenHeight = camera.orthographicSize * 2f;
+		float pixelsPerMeter = Screen.height / worldScreenHeight;
+
+		// 3. 画面上のY座標オフセットを計算 (scrollScaleで視差効果を適用)
+		float screenY = heightDiff * pixelsPerMeter * scrollScale;
+
+		return screenY;
+	}
+
+	// 背景オブジェクトの見た目縦サイズ(ピクセル)を推定
+	private float GetEstimatedPixelHeight()
+	{
+		if (activeInstance != null)
 		{
+			var rt = activeInstance.GetComponent<RectTransform>();
+			if (rt != null) return rt.rect.height * activeInstance.transform.lossyScale.y;
+		}
+		if (prefab != null)
+		{
+			var rt = prefab.GetComponent<RectTransform>();
+			if (rt != null) return rt.rect.height * prefab.transform.lossyScale.y;
+		}
+		return Screen.height * 0.2f; // フォールバック
+	}
+
+	// ★ 変更点: 判定にもCameraが必要です
+	private bool IsVerticallyVisible(float currentHeight, Camera camera, float marginPixels)
+	{
+		float y = CalculateScreenY(currentHeight, camera);
+		float halfObj = GetEstimatedPixelHeight() * 0.5f;
+		float halfScreen = Screen.height * 0.5f;
+
+		// 画面内に入っているか（上下マージン込み）
+		return (y + halfObj) >= (-halfScreen - marginPixels) && (y - halfObj) <= (halfScreen + marginPixels);
+	}
+
+	// --- Type 1: 区間生成ロジック ---
+	private void UpdateRangeSpawn(Transform parent, Camera camera, float currentHeight)
+	{
+		// ★ 修正ポイント: マージンに差をつける
+		// 生成時: 画面端ギリギリ（または少し余裕を持つ程度）で判定
+		float spawnMargin = 10f;
+		// 削除時: 画面高の50%ぶん、完全に見えなくなっても維持する（＝即座に消さない）
+		float destroyMargin = Screen.height * 0.5f;
+
+		bool visibleForSpawn = IsVerticallyVisible(currentHeight, camera, spawnMargin);
+		bool visibleForKeep = IsVerticallyVisible(currentHeight, camera, destroyMargin);
+
+		if (visibleForSpawn)
+		{
+			float screenY = CalculateScreenY(currentHeight, camera);
 			if (activeInstance == null)
 			{
 				activeInstance = Object.Instantiate(prefab, parent);
-				activeInstance.transform.localPosition = new Vector3(offsetX, targetHeight, 0f);
+				activeInstance.SetActive(true);
+				// ... (座標設定はそのまま) ...
+				activeInstance.transform.localPosition = new Vector3((ratioX) * Screen.width, screenY, 0f);
+			}
+			else
+			{
+				// ... (座標更新はそのまま) ...
+				Vector3 pos = activeInstance.transform.localPosition;
+				pos.x = (ratioX) * Screen.width;
+				pos.y = screenY;
+				activeInstance.transform.localPosition = pos;
 			}
 		}
 		else
 		{
-			if (activeInstance != null)
+			//visibleForKeepの時でも座標更新
+			if (activeInstance != null && visibleForKeep)
+			{
+				float screenY = CalculateScreenY(currentHeight, camera);
+				Vector3 pos = activeInstance.transform.localPosition;
+				pos.x = (ratioX) * Screen.width;
+				pos.y = screenY;
+				activeInstance.transform.localPosition = pos;
+			}
+			// visibleForKeep（広い範囲）からも出たら初めて削除
+			if (activeInstance != null && !visibleForKeep)
 			{
 				Object.Destroy(activeInstance);
 				activeInstance = null;
 			}
 		}
-
-		// 縦位置の更新（カメラに合わせて逆スクロール）
-		if (activeInstance != null)
-		{
-			float camY = camera.position.y;
-			// ローカル座標で制御（親の動きに依存しないよう計算）
-			activeInstance.transform.localPosition = new Vector3(offsetX, targetHeight - camY, 0f);
-		}
 	}
-
 	// --- Type 2: 横ループロジック ---
-	private void UpdateHorizontalLoop(Transform parent, Transform camera, float playerHeight)
+	private void UpdateHorizontalLoop(Transform parent, Camera camera, float playerHeight)
 	{
-		if (!isInitializedLoop) InitializeLoop(parent);
+		float spawnMargin = 10f;
+		float destroyMargin = Screen.height * 0.5f;
 
-		float camY = camera.position.y;
-		float width = Screen.width; // 画面幅基準（必要に応じて固定値に変更可）
+		bool visibleForSpawn = IsVerticallyVisible(playerHeight, camera, spawnMargin);
+		bool visibleForKeep = IsVerticallyVisible(playerHeight, camera, destroyMargin);
 
-		foreach (var bg in loopInstances)
+		if (visibleForSpawn)
 		{
-			if (bg == null) continue;
-
-			Vector3 pos = bg.transform.localPosition;
-
-			// 縦：指定高さからカメラ位置を引いて逆スクロールさせる
-			pos.y = targetHeight - camY;
-
-			// 横：自動スクロール
-			pos.x -= scrollSpeedX * Time.deltaTime;
-
-			// ループ処理
-			if (pos.x <= -width)
+			// まだ生成されていなければ生成そしてsetactive
+			if (!isInitializedLoop)
 			{
-				pos.x += width * 3f; // 3枚並べているので3枚分戻す
+				InitializeLoop(parent);
+				foreach (var obj in loopInstances)
+				{
+					if (obj != null) obj.SetActive(true);
+				}
 			}
 
-			bg.transform.localPosition = pos;
+			// ★ 修正ポイント: 常に位置を更新（縦移動 ＋ 横ループ）
+			UpdateLoopPositions(camera, playerHeight);
+		}
+		else
+		{
+			// 画面外(spawnMargin外)だが、削除マージン内なら維持＆更新
+			if (isInitializedLoop && visibleForKeep)
+			{
+				UpdateLoopPositions(camera, playerHeight);
+			}
+
+			// 完全に画面外に出たら削除
+			if (isInitializedLoop && !visibleForKeep)
+			{
+				ClearLoopInstances();
+			}
 		}
 	}
 
+
+	private void UpdateLoopPositions(Camera camera, float currentHeight)
+	{
+		if (loopInstances == null || loopInstances.Count < 3) return;
+
+		// 1. 縦位置（Y）の計算（Type 1と同じロジック）
+		float screenY = CalculateScreenY(currentHeight, camera);
+
+		// 2. 横位置（X）の計算（無限ループ）
+		// カメラの現在X座標を取得
+		float camX = camera.transform.position.x;
+		float bgWidth = 18; // 背景オブジェクトの幅（ワールド単位）
+
+		float snapCenterX = -camX / bgWidth * Screen.width * scrollScale;
+		//snapCenterを画面名に留めるように Screen.width の倍数で調整
+		snapCenterX = snapCenterX - Mathf.Floor(snapCenterX / Screen.width) * Screen.width;
+
+		// 左
+		SetLoopInstancePosition(loopInstances[0], snapCenterX - Screen.width, screenY);
+		// 中央
+		SetLoopInstancePosition(loopInstances[1], snapCenterX, screenY);
+		// 右
+		SetLoopInstancePosition(loopInstances[2], snapCenterX + Screen.width, screenY);
+	}
+
+	// ヘルパー: 個別の座標設定
+	private void SetLoopInstancePosition(GameObject obj, float x, float y)
+	{
+		if (obj == null) return;
+		Vector3 pos = obj.transform.localPosition;
+		pos.x = x;
+		pos.y = y;
+		obj.transform.localPosition = pos;
+	}
+
+	// ... (InitializeLoop, ClearLoopInstances, Cleanup は変更なし) ...
 	private void InitializeLoop(Transform parent)
 	{
 		loopInstances = new List<GameObject>();
 		float width = Screen.width;
-
-		// -1(左), 0(中央), 1(右) の3枚を生成して隙間なくループさせる
 		for (int i = -1; i <= 1; i++)
 		{
 			GameObject bg = Object.Instantiate(prefab, parent);
-			bg.transform.localPosition = new Vector3(i * width, targetHeight, 0f);
+			bg.transform.localPosition = new Vector3(i * width, 0f, 0f);
 			loopInstances.Add(bg);
 		}
 		isInitializedLoop = true;
 	}
 
-	/// <summary>
-	/// シーン終了時などの掃除
-	/// </summary>
-	public void Cleanup()
+
+
+	private void ClearLoopInstances()
 	{
-		if (activeInstance != null) Object.Destroy(activeInstance);
 		if (loopInstances != null)
 		{
 			foreach (var obj in loopInstances) if (obj != null) Object.Destroy(obj);
 			loopInstances.Clear();
 		}
+		isInitializedLoop = false;
+	}
+	public void Cleanup()
+	{
+		if (activeInstance != null) Object.Destroy(activeInstance);
+		ClearLoopInstances();
 	}
 }
 
-
 // =========================================================
-// 2. メインの管理クラス (MonoBehaviour)
+// Main Class Update
 // =========================================================
-
 public class BackGround : MonoBehaviour
 {
-	// =====================
-	// Sky 設定
-	// =====================
 	[Header("Sky Settings")]
 	public Color SkyTopColor;
 	public Color SkyBottomColor;
 	public RawImage4Color skyImage;
 
-	// =====================
-	// Camera
-	// =====================
 	[Header("Camera")]
-	public Transform mainCamera;
+	public Camera mainCamera; // TransformではなくCamera型に変更推奨
 
-	// =====================
-	// Background Objects (リスト)
-	// =====================
 	[Header("Background Objects List")]
-	// ★ここがリストになっているので、インスペクターで自由に増やせます★
 	public List<BackgroundObject> backgroundObjects = new List<BackgroundObject>();
 
 	private GameManager gameManager;
 
 	void Start()
 	{
-		// GameManagerを探して取得
 		var gmTransform = transform.Find("GameManager");
-		if (gmTransform != null)
-		{
-			gameManager = gmTransform.GetComponent<GameManager>();
-		}
-		else
-		{
-			gameManager = FindObjectOfType<GameManager>();
-		}
+		if (gmTransform != null) gameManager = gmTransform.GetComponent<GameManager>();
+		else gameManager = FindObjectOfType<GameManager>();
+
+		// Cameraコンポーネント取得の保険
+		if (mainCamera == null) mainCamera = Camera.main;
 	}
 
 	void Update()
 	{
-		if (gameManager == null) return;
+		if (gameManager == null || mainCamera == null) return;
 
 		UpdateSky();
-		UpdateBackgroundObjects();
+
+		float playerHeight = mainCamera.transform.position.y; // Y座標取得
+
+		foreach (var bgObject in backgroundObjects)
+		{
+			// ★ 変更点: Cameraコンポーネント自体を渡す
+			bgObject.Update(transform, mainCamera, playerHeight);
+		}
 	}
 
-	// Skyグラデーション
+	// ... (UpdateSky, OnDestroy は変更なし) ...
 	void UpdateSky()
 	{
 		float currentMaxHeight = gameManager.maxHeight;
-		float height = Mathf.Clamp(gameManager.playerHeight + 5f, 0f, currentMaxHeight);
+		float height = Mathf.Clamp(mainCamera.transform.position.y + 5f, 0f, currentMaxHeight);
 		float t1 = height / currentMaxHeight;
-		height = Mathf.Clamp(gameManager.playerHeight - 5f, 0f, currentMaxHeight);
+		height = Mathf.Clamp(mainCamera.transform.position.y - 5f, 0f, currentMaxHeight);
 		float t2 = height / currentMaxHeight;
 		Color currentColor1 = Color.Lerp(SkyBottomColor, SkyTopColor, t1);
 		Color currentColor2 = Color.Lerp(SkyBottomColor, SkyTopColor, t2);
@@ -223,21 +313,18 @@ public class BackGround : MonoBehaviour
 		}
 	}
 
-	// 全背景オブジェクトの更新
-	void UpdateBackgroundObjects()
-	{
-		// リストに登録された全ての背景設定を実行
-		foreach (var bgObject in backgroundObjects)
-		{
-			bgObject.Update(transform, mainCamera, gameManager.playerHeight);
-		}
-	}
-
 	void OnDestroy()
 	{
-		foreach (var bgObject in backgroundObjects)
+		foreach (var bgObject in backgroundObjects) bgObject.Cleanup();
+	}
+
+	public void AddBackgroundObject(GameObject targetobject, BackgroundObject bgObject)
+	{
+		if (bgObject != null && !backgroundObjects.Contains(bgObject))
 		{
-			bgObject.Cleanup();
+			Destroy(bgObject.prefab.GetComponent<BackGroundSetter>());
+			targetobject.SetActive(false);
+			backgroundObjects.Add(bgObject);
 		}
 	}
 }
