@@ -65,6 +65,20 @@ public class BackgroundObject
 
 		return screenY;
 	}
+	private float GetEstimatedPixelWidth()
+	{
+		if (activeInstance != null)
+		{
+			var rt = activeInstance.GetComponent<RectTransform>();
+			if (rt != null) return rt.rect.width * rt.lossyScale.x * activeInstance.transform.lossyScale.x;
+		}
+		if (prefab != null)
+		{
+			var rt = prefab.GetComponent<RectTransform>();
+			if (rt != null) return rt.rect.width * rt.lossyScale.x * prefab.transform.lossyScale.x;
+		}
+		return Screen.width * 0.2f; // フォールバック
+	}
 
 	// 背景オブジェクトの見た目縦サイズ(ピクセル)を推定
 	private float GetEstimatedPixelHeight()
@@ -72,12 +86,12 @@ public class BackgroundObject
 		if (activeInstance != null)
 		{
 			var rt = activeInstance.GetComponent<RectTransform>();
-			if (rt != null) return rt.rect.height * activeInstance.transform.lossyScale.y;
+			if (rt != null) return rt.rect.height * rt.lossyScale.y * activeInstance.transform.lossyScale.y;
 		}
 		if (prefab != null)
 		{
 			var rt = prefab.GetComponent<RectTransform>();
-			if (rt != null) return rt.rect.height * prefab.transform.lossyScale.y;
+			if (rt != null) return rt.rect.height * rt.lossyScale.y * prefab.transform.lossyScale.y;
 		}
 		return Screen.height * 0.2f; // フォールバック
 	}
@@ -86,11 +100,11 @@ public class BackgroundObject
 	private bool IsVerticallyVisible(float currentHeight, Camera camera, float marginPixels)
 	{
 		float y = CalculateScreenY(currentHeight, camera);
-		float halfObj = GetEstimatedPixelHeight() * 0.5f;
-		float halfScreen = Screen.height * 0.5f;
+		float ObjectHight = GetEstimatedPixelHeight();
+		float Screenhight = Screen.height;
 
 		// 画面内に入っているか（上下マージン込み）
-		return (y + halfObj) >= (-halfScreen - marginPixels) && (y - halfObj) <= (halfScreen + marginPixels);
+		return (y + ObjectHight) >= (-Screenhight - marginPixels) && (y - ObjectHight) <= (Screenhight + marginPixels);
 	}
 
 	// --- Type 1: 区間生成ロジック ---
@@ -99,11 +113,8 @@ public class BackgroundObject
 		// ★ 修正ポイント: マージンに差をつける
 		// 生成時: 画面端ギリギリ（または少し余裕を持つ程度）で判定
 		float spawnMargin = 10f;
-		// 削除時: 画面高の50%ぶん、完全に見えなくなっても維持する（＝即座に消さない）
-		float destroyMargin = Screen.height * 0.5f;
 
 		bool visibleForSpawn = IsVerticallyVisible(currentHeight, camera, spawnMargin);
-		bool visibleForKeep = IsVerticallyVisible(currentHeight, camera, destroyMargin);
 
 		if (visibleForSpawn)
 		{
@@ -126,17 +137,7 @@ public class BackgroundObject
 		}
 		else
 		{
-			//visibleForKeepの時でも座標更新
-			if (activeInstance != null && visibleForKeep)
-			{
-				float screenY = CalculateScreenY(currentHeight, camera);
-				Vector3 pos = activeInstance.transform.localPosition;
-				pos.x = (ratioX) * Screen.width;
-				pos.y = screenY;
-				activeInstance.transform.localPosition = pos;
-			}
-			// visibleForKeep（広い範囲）からも出たら初めて削除
-			if (activeInstance != null && !visibleForKeep)
+			if (activeInstance != null)
 			{
 				Object.Destroy(activeInstance);
 				activeInstance = null;
@@ -146,11 +147,9 @@ public class BackgroundObject
 	// --- Type 2: 横ループロジック ---
 	private void UpdateHorizontalLoop(Transform parent, Camera camera, float playerHeight)
 	{
-		float spawnMargin = 10f;
-		float destroyMargin = Screen.height * 0.5f;
+		float spawnMargin = GetEstimatedPixelWidth();
 
 		bool visibleForSpawn = IsVerticallyVisible(playerHeight, camera, spawnMargin);
-		bool visibleForKeep = IsVerticallyVisible(playerHeight, camera, destroyMargin);
 
 		if (visibleForSpawn)
 		{
@@ -169,14 +168,7 @@ public class BackgroundObject
 		}
 		else
 		{
-			// 画面外(spawnMargin外)だが、削除マージン内なら維持＆更新
-			if (isInitializedLoop && visibleForKeep)
-			{
-				UpdateLoopPositions(camera, playerHeight);
-			}
-
-			// 完全に画面外に出たら削除
-			if (isInitializedLoop && !visibleForKeep)
+			if (isInitializedLoop)
 			{
 				ClearLoopInstances();
 			}
@@ -322,7 +314,7 @@ public class BackGround : MonoBehaviour
 	{
 		if (bgObject != null && !backgroundObjects.Contains(bgObject))
 		{
-			Destroy(bgObject.prefab.GetComponent<BackGroundSetter>());
+			Destroy(bgObject.prefab.GetComponent<BackGroundComponent>());
 			targetobject.SetActive(false);
 			backgroundObjects.Add(bgObject);
 		}

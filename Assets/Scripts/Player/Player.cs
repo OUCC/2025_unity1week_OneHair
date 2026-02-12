@@ -67,10 +67,27 @@ public class Player : MonoBehaviour
 	private bool isKickFlashing;
 
 	private Vector2 grapplePoint;
+	enum DifficultyLevel { Easy, Normal, Hard }
+	float DamageMultiplier()
+	{
+		switch (currentDifficulty)
+		{
+			case DifficultyLevel.Easy:
+				return 0f;
+			case DifficultyLevel.Normal:
+				return 0.5f;
+			case DifficultyLevel.Hard:
+				return 1.0f;
+			default:
+				return 1.0f;
+		}
+	}
 	private DistanceJoint2D joint;
 
 	private int currentStrainFaceIndex = -1;
 	private int currentKickFaceIndex = -1;
+	[Header("Difficulty Settings")]
+	[SerializeField] private DifficultyLevel currentDifficulty = DifficultyLevel.Easy;
 	[Header("Audio")]
 	public AudioSource sfxSource;              // 1発系
 	public AudioSource grappleLoopSource;      // 掴んでる間ループ

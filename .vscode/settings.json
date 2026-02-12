@@ -66,5 +66,5 @@
     "explorer.fileNesting.patterns": {
         "*.sln": "*.csproj"
     },
-    "dotnet.defaultSolution": "2025_unity1week_OneHair.sln"
+    "dotnet.defaultSolution": "2025_unity1week_OneHair.slnx"
 }
