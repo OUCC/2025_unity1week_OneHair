@@ -114,6 +114,10 @@ public class Player : MonoBehaviour
 
 	void Start()
 	{
+		switch (PlayerPrefs.GetInt("Difficulty", 1))
+		{
+
+		}
 		rb = GetComponent<Rigidbody2D>();
 		mainCam = Camera.main;
 
