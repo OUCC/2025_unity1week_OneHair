@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviour
 
 	[Header("Height Score")]
 	public float playerHeight;
+	private int currentscore = 0;
 	public float maxHeight;
 
 	[Header("UI")]
@@ -61,9 +62,12 @@ public class GameManager : MonoBehaviour
 			float currentHeight = playerTransform.position.y + heightOffset;
 			playerHeight = currentHeight;
 			score = Mathf.FloorToInt(currentHeight);
+			if (score > currentscore)
+			{
+				currentscore = score;
+			}
 			if (currentHeight < -5.0f)
 			{
-				score = 0;
 				GameOver();
 			}
 
@@ -78,7 +82,7 @@ public class GameManager : MonoBehaviour
 			timeText.text = "時間：" + time.ToString("F2") + " 秒";
 
 		if (scoreText != null)
-			scoreText.text = "スコア：" + score + "m";
+			scoreText.text = "スコア：" + currentscore + "m";
 
 	}
 
