@@ -114,6 +114,10 @@ public class Player : MonoBehaviour
 
 	void Start()
 	{
+		switch (PlayerPrefs.GetInt("Difficulty", 1))
+		{
+
+		}
 		rb = GetComponent<Rigidbody2D>();
 		mainCam = Camera.main;
 
@@ -180,7 +184,7 @@ public class Player : MonoBehaviour
 			TryKick();
 		}
 
-		if (Keyboard.current.fKey.wasPressedThisFrame)
+		if (Keyboard.current.fKey.wasPressedThisFrame || Mouse.current.leftButton.wasPressedThisFrame)
 		{
 			currentStrainFaceIndex = Random.Range(strainFaceMin, strainFaceMax + 1);
 		}

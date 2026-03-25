@@ -11,6 +11,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
+  - enabled: 1
+    path: Assets/Scenes/OpeningMovie.unity
+    guid: 7fdb172e3d6c84ca1a00d7fc7b56b037
+  - enabled: 1
+    path: Assets/Scenes/BackGround.unity
+    guid: 88133d4b230f94ec590baf86fc5ce86a
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

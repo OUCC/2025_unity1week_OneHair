@@ -37,6 +37,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3985025970874160138
 SpriteRenderer:
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -82,7 +83,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -1187243887765953148, guid: fbf1d8395086847d1b271c9df2c7baef, type: 3}
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: -1818877593710978254, guid: fce01cf0e988a43b492b79e7ee766bdc, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -91,7 +93,6 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!61 &8695183876595604921
 BoxCollider2D:
@@ -131,13 +132,13 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 2.08, y: 2.75}
+    oldSize: {x: 1.56, y: 4.68}
     newSize: {x: 2.08, y: 2.75}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 2.14, y: 2.74}
+  m_Size: {x: 1.58, y: 4.12}
   m_EdgeRadius: 0
 --- !u!50 &8644912088835139084
 Rigidbody2D:

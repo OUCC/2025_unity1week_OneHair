@@ -310,7 +310,7 @@ GameObject:
   - component: {fileID: 286311056}
   - component: {fileID: 286311055}
   m_Layer: 0
-  m_Name: Scenes
+  m_Name: SceneLoader
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -480,6 +480,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 342209210}
   m_CullTransparentMesh: 1
+--- !u!1 &388171903
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 388171905}
+  - component: {fileID: 388171904}
+  m_Layer: 0
+  m_Name: SaveDifficulty
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &388171904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 388171903}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 231865d8e54214a5fbaf1b7f5639b210, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveDifficulty
+--- !u!4 &388171905
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 388171903}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 787.09503, y: 751.3426, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &437031624
 GameObject:
   m_ObjectHideFlags: 0
@@ -493,7 +537,7 @@ GameObject:
   - component: {fileID: 437031627}
   - component: {fileID: 437031626}
   m_Layer: 5
-  m_Name: Nr2
+  m_Name: Easy
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -572,7 +616,19 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: Stage-you4
+          m_StringArgument: OpeningMovie
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 388171904}
+        m_TargetAssemblyTypeName: SaveDifficulty, Assembly-CSharp
+        m_MethodName: Save
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 1
+          m_FloatArgument: 0
+          m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &437031627
@@ -666,7 +722,7 @@ GameObject:
   - component: {fileID: 667117723}
   - component: {fileID: 667117722}
   m_Layer: 5
-  m_Name: Nr3
+  m_Name: nor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -736,16 +792,28 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 286311054}
+      - m_Target: {fileID: 286311055}
         m_TargetAssemblyTypeName: SceneLoader, Assembly-CSharp
-        m_MethodName: 
+        m_MethodName: LoadScene
         m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: Stage-you5
+          m_StringArgument: OpeningMovie
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 388171904}
+        m_TargetAssemblyTypeName: SaveDifficulty, Assembly-CSharp
+        m_MethodName: Save
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 2
+          m_FloatArgument: 0
+          m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &667117723
@@ -1590,20 +1658,32 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 1647150820}
+  m_TargetGraphic: {fileID: 1911980137}
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 286311054}
-        m_TargetAssemblyTypeName: SceneLoader, Assembly-CSharp
-        m_MethodName: 
-        m_Mode: 5
+      - m_Target: {fileID: 923296839}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: Stage-you5
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
+      - m_Target: {fileID: 640657377}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &1647150820
@@ -1657,7 +1737,7 @@ GameObject:
   - component: {fileID: 1754404388}
   - component: {fileID: 1754404387}
   m_Layer: 5
-  m_Name: Nr4
+  m_Name: hard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1727,16 +1807,28 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 286311054}
+      - m_Target: {fileID: 286311055}
         m_TargetAssemblyTypeName: SceneLoader, Assembly-CSharp
-        m_MethodName: 
+        m_MethodName: LoadScene
         m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: Stage-you5
+          m_StringArgument: OpeningMovie
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 388171904}
+        m_TargetAssemblyTypeName: SaveDifficulty, Assembly-CSharp
+        m_MethodName: Save
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 3
+          m_FloatArgument: 0
+          m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &1754404388
@@ -2210,7 +2302,7 @@ GameObject:
   - component: {fileID: 2043210508}
   - component: {fileID: 2043210507}
   m_Layer: 5
-  m_Name: Nr1
+  m_Name: Tutorial
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2279,19 +2371,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2043210508}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 286311055}
-        m_TargetAssemblyTypeName: SceneLoader, Assembly-CSharp
-        m_MethodName: LoadScene
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: SampleScene
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &2043210508
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2603,3 +2683,4 @@ SceneRoots:
   - {fileID: 115715857}
   - {fileID: 924246210}
   - {fileID: 286311056}
+  - {fileID: 388171905}
