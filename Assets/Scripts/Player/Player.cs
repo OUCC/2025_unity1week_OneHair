@@ -116,7 +116,15 @@ public class Player : MonoBehaviour
 	{
 		switch (PlayerPrefs.GetInt("Difficulty", 1))
 		{
-
+			case 1:
+				currentDifficulty = DifficultyLevel.Easy;
+				break;
+			case 2:
+				currentDifficulty = DifficultyLevel.Normal;
+				break;
+			case 3:
+				currentDifficulty = DifficultyLevel.Hard;
+				break;
 		}
 		rb = GetComponent<Rigidbody2D>();
 		mainCam = Camera.main;
@@ -532,6 +540,7 @@ public class Player : MonoBehaviour
 	public void Damage(float amount)
 	{
 		if (amount <= 0) return;
+		amount *= DamageMultiplier();
 		currentHP = Mathf.Max(0, currentHP - amount);
 		UpdateHP();
 
