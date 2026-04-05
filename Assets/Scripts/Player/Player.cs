@@ -148,6 +148,11 @@ public class Player : MonoBehaviour
 			ForceStop();
 		}
 
+		if (transform.position.y < -5f && !isDead)
+		{
+			OnPlayerDeath();
+		}
+
 		if (isDead)
 		{
 			UpdateHairFall();
@@ -522,11 +527,6 @@ public class Player : MonoBehaviour
 	{
 		hpSlider.maxValue = maxHP;
 		hpSlider.value = currentHP;
-
-		if (currentHP <= 0)
-		{
-			GameManager.Instance.GameOver();
-		}
 	}
 
 	public void Damage(float amount)
@@ -548,6 +548,7 @@ public class Player : MonoBehaviour
 		Vector2 root = GetRootPos();
 		hairFallRoot = root;
 		hairFallTip = root + (Vector2)transform.up * currentLength;
+		GameManager.Instance.GameOver();
 		ForceStop();
 	}
 

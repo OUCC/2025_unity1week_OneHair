@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5238497310354449817}
   - component: {fileID: 2904440589498216586}
   - component: {fileID: 4009701817823789327}
+  - component: {fileID: 8793760957073628843}
   - component: {fileID: 5123226334504592252}
   m_Layer: 0
   m_Name: Ikumouzai
@@ -36,6 +37,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &2904440589498216586
 SpriteRenderer:
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -81,6 +83,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_Sprite: {fileID: 2438322920030036830, guid: d63230b6139e14345b347c50701886da, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -90,7 +93,6 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!114 &4009701817823789327
 MonoBehaviour:
@@ -105,6 +107,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ikumozai
   healAmount: 50
+--- !u!114 &8793760957073628843
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2186311962728094298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43241044e3f0a13448aaf1a3e6c388ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CheckPoint
+  GM: {fileID: 0}
 --- !u!61 &5123226334504592252
 BoxCollider2D:
   m_ObjectHideFlags: 0

@@ -84,14 +84,16 @@ namespace ScreenPocket
 			}
 		}
 
+#if UNITY_EDITOR
 		/// <summary>
 		/// インスペクターで値を変更したときに即座に反映させる用
 		/// </summary>
 		protected override void OnValidate()
 		{
-			base.OnValidate();
+			//base.OnValidate();
 			SetVerticesDirty();
 		}
+#endif
 
 		/// <summary>
 		/// メッシュ生成

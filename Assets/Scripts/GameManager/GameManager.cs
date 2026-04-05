@@ -67,16 +67,14 @@ public class GameManager : MonoBehaviour
 			{
 				currentscore = score;
 			}
-			if (currentHeight < -5.0f)
-			{
-				GameOver();
-			}
 
 			if (currentHeight > maxHeight)
 				score = Mathf.FloorToInt(maxHeight);
 
 			if (heightText != null)
 				heightText.text = "高さ：" + currentHeight.ToString("F2") + " m";
+
+
 		}
 
 		if (timeText != null)
@@ -84,6 +82,8 @@ public class GameManager : MonoBehaviour
 
 		if (scoreText != null)
 			scoreText.text = "スコア：" + currentscore + "m";
+
+
 
 	}
 
