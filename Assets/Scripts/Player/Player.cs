@@ -295,20 +295,11 @@ public class Player : MonoBehaviour
 
 		RaycastHit2D hit = Physics2D.Raycast(root, dir, currentLength);
 
-		if (hit.collider == null || hit.collider.gameObject == gameObject || hit.collider.isTrigger)
+		if (hit.collider == null || hit.collider.gameObject == gameObject || hit.collider.isTrigger || hit.collider.gameObject.tag == "UnGrappleable")
 			return;
 
 		if (isMaxExtended && !isGrappling)
 			StartGrapple(hit.point, hit.collider.gameObject);
-	}
-
-	void SpawnExtendEffect(Vector2 position)
-	{
-		if (extendEffectPrefab == null) return;
-		//angle は自分の向き+90度
-		float angle = transform.eulerAngles.z + 90f;
-		GameObject Penetrate = Instantiate(extendEffectPrefab, position, Quaternion.Euler(0, 0, angle));
-		Penetrate.transform.parent = transform;
 	}
 
 	void StartGrapple(Vector2 point, GameObject hitObject)
@@ -335,7 +326,7 @@ public class Player : MonoBehaviour
 
 		joint.anchor = Vector2.zero;
 		joint.maxDistanceOnly = true;
-		joint.distance = Vector2.Distance(transform.position, point);
+		joint.distance = Vector2.Distance(GetRootPos(), point);
 		joint.enableCollision = true;
 
 		if (grappleLoopSource != null && grappleLoopClip != null)
@@ -357,6 +348,12 @@ public class Player : MonoBehaviour
 
 	void HandleSwing()
 	{
+		//だんだんjoint.distanceを伸ばすmaxLengthまで
+
+		if (joint.distance < maxLength)
+		{
+			joint.distance = Mathf.Min(joint.distance + (maxLength - joint.distance) * 5f * Time.deltaTime, maxLength);
+		}
 		if (GrappleDamageCount > GrappleDamageInterval)
 		{
 			GrappleDamageCount -= GrappleDamageInterval;
