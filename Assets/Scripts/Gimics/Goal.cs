@@ -3,6 +3,7 @@ using UnityEngine;
 public class Goal : MonoBehaviour
 {
 	[SerializeField] private string playerTag = "Player";
+	[SerializeField] private AudioSource clearSound; // クリア時の効果音
 
 	private bool isCleared = false;
 
@@ -25,6 +26,11 @@ public class Goal : MonoBehaviour
 		if (GameManager.Instance != null)
 		{
 			GameManager.Instance.ClearGame();
+			// クリア音を再生
+			if (clearSound != null)
+			{
+				clearSound.Play();
+			}
 		}
 		else
 		{

@@ -10,8 +10,21 @@ public class CameraFollow : MonoBehaviour
 	public float smoothTime = 0.3f; // 追う速さのなめらかさ（小さいほど速く追う）
 	public float maxSpeed = 10.0f;  // 追う速度の限界値
 
+	private bool isFirstFrame = true; // 最初のフレームかどうかのフラグ
 	private Vector3 currentVelocity; // SmoothDamp計算用の変数（いじらなくてOK）
 
+
+	void Update()
+	{
+		//updateの1フレーム目のみPlayerの位置にカメラを瞬間移動させる（ティアリング対策）
+		if (target != null && currentVelocity == Vector3.zero && isFirstFrame)
+		{
+			Vector3 targetPosition = target.position + offset;
+			targetPosition.z = -10f;
+			transform.position = targetPosition;
+			isFirstFrame = false;
+		}
+	}
 	// カメラの移動は LateUpdate に書くのが鉄則（プレイヤーが動いた後に移動するため）
 	void LateUpdate()
 	{
