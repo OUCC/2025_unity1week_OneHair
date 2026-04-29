@@ -2,6 +2,8 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.InputSystem;
 using unityroom.Api;
+using System.Data.Common;
+
 public class GameManager : MonoBehaviour
 {
 	public static GameManager Instance;
@@ -24,6 +26,11 @@ public class GameManager : MonoBehaviour
 	private int currentscore = 0;
 	public float maxHeight;
 
+	[Header("Checkpoint Data")]
+	private Vector3 checkpointPosition;
+	private float checkpointTime;
+	private bool hasCheckpoint = false;
+
 	[Header("UI")]
 	[SerializeField] private GameObject FinUI;
 	[SerializeField] private GameObject clearUI;
@@ -39,19 +46,29 @@ public class GameManager : MonoBehaviour
 
 	private void Awake()
 	{
-		// シーン内限定シングルトン
+		// DontDestroyOnLoadで保持
 		if (Instance != null && Instance != this)
 		{
 			Destroy(gameObject);
 			return;
 		}
 		Instance = this;
+
+	}
+
+	private void Start()
+	{
+		// チェックポイントデータがあれば復元
+		if (CheckpointData.Load(out Vector3 savedPos, out float savedTime) && player != null)
+		{
+			player.transform.position = savedPos;
+			time = savedTime;
+		}
 	}
 
 	private void Update()
 	{
 		if (currentState != GameState.Playing) return;
-
 
 		time += Time.deltaTime;
 
@@ -85,13 +102,20 @@ public class GameManager : MonoBehaviour
 		if (scoreText != null)
 			scoreText.text = "スコア：" + currentscore + "m";
 
+		if (Keyboard.current.cKey.wasPressedThisFrame)
+		{
+			CheckpointData.Clear();
+			Debug.Log("Checkpoint data cleared.");
+			//シーンを再読み込みしてリセット
+			UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+		}
 	}
 
 	void FindPlayer()
 	{
-		GameObject player = GameObject.FindGameObjectWithTag("Player");
-		if (player != null)
-			playerTransform = player.transform;
+		GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+		if (playerObj != null)
+			playerTransform = playerObj.transform;
 	}
 
 	public void ClearGame()
@@ -101,6 +125,7 @@ public class GameManager : MonoBehaviour
 		if (FinUI != null) FinUI.SetActive(true);
 		if (clearUI != null) clearUI.SetActive(true);
 		score += (int)player.currentHP;
+		CheckpointData.Clear();
 		UnityroomApiClient.Instance.SendScore(1, score, ScoreboardWriteMode.HighScoreDesc);
 	}
 
@@ -110,15 +135,12 @@ public class GameManager : MonoBehaviour
 		currentState = GameState.GameOver;
 		if (FinUI != null) FinUI.SetActive(true);
 		if (gameOverUI != null) gameOverUI.SetActive(true);
-		UnityroomApiClient.Instance.SendScore(1, score, ScoreboardWriteMode.HighScoreDesc);
+		//UnityroomApiClient.Instance.SendScore(1, score, ScoreboardWriteMode.HighScoreDesc);
 	}
 
-	public void ResetGame()
+	public void ClearGameData()
 	{
-		time = 0f;
-		score = 0;
-		maxHeight = 0f;
-		currentState = GameState.Playing;
+		CheckpointData.Clear();
 	}
 
 	public bool IsPlaying()

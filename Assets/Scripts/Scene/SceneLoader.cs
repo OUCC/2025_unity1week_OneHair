@@ -9,6 +9,7 @@ public class SceneLoader : MonoBehaviour
 	public void LoadScene(string sceneName)
 	{
 		SceneManager.LoadScene(sceneName);
+		CheckpointData.Clear(); // シーン移動時にチェックポイントデータをクリア
 	}
 
 	/// <summary>
@@ -17,6 +18,7 @@ public class SceneLoader : MonoBehaviour
 	public void LoadScene(int sceneIndex)
 	{
 		SceneManager.LoadScene(sceneIndex);
+		CheckpointData.Clear(); // シーン移動時にチェックポイントデータをクリア
 	}
 
 	/// <summary>
