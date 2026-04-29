@@ -7,8 +7,8 @@ public class CameraFollow : MonoBehaviour
 	public Vector3 offset = new Vector3(0, 0, -10); // プレイヤーとの距離（Zは-10推奨）
 
 	[Header("Settings")]
-	public float smoothTime = 0.3f; // 「ぬるり」具合（0に近いほどキビキビ、大きいほど遅れる）
-	public float maxSpeed = 10.0f;  // 【今回のキモ】追う速度の限界値
+	public float smoothTime = 0.3f; // 追う速さのなめらかさ（小さいほど速く追う）
+	public float maxSpeed = 10.0f;  // 追う速度の限界値
 
 	private Vector3 currentVelocity; // SmoothDamp計算用の変数（いじらなくてOK）
 
