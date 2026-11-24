@@ -98,7 +98,6 @@ public class Player : MonoBehaviour
 	[Header("Damage Settings")]
 	[SerializeField] private float GrappleDamageAmount = 1.0f;
 	[SerializeField] private float GrappleDamageInterval = 0.5f;
-	[SerializeField] private float grappleOffDamage = 10f;
 	[SerializeField] private float kickDamageAmount = 5f;
 
 	private float GrappleDamageCount = 0f;
@@ -376,8 +375,6 @@ public class Player : MonoBehaviour
 		isMaxExtended = false;
 		currentLength = minLength;
 
-		Damage(grappleOffDamage);
-
 		foreach (var j in GetComponents<DistanceJoint2D>())
 			Destroy(j);
 
@@ -456,7 +453,7 @@ public class Player : MonoBehaviour
 			return;
 		}
 
-		if (kickTrigger != null && kickTrigger.HasTarget)
+		if (kickTrigger != null && kickTrigger.HasTarget && !isExtending)
 		{
 			float shortenedLength = currentLength * 0.3f;
 			DrawWavyHair(root, transform.up, shortenedLength);
